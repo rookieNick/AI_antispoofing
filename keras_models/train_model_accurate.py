@@ -39,8 +39,8 @@ def train_model():
 
     # --- Training configuration ---
     BATCH_SIZE = 64  # Small batch size to fit in GPU memory
-    IMAGE_SIZE = (96, 96)  # Image size for training and testing
-    EPOCHS = 100  # Number of training epochs
+    IMAGE_SIZE = (112, 112)  # Standardized image size for training and testing
+    EPOCHS = 50  # Number of training epochs
     
     print(f"Using batch size: {BATCH_SIZE}")
     print(f"Using image size: {IMAGE_SIZE}")
@@ -104,16 +104,24 @@ def train_model():
     data_augmentation = tf.keras.Sequential([
         tf.keras.layers.Rescaling(1./255),
         tf.keras.layers.RandomFlip("horizontal"),
-        # tf.keras.layers.RandomRotation(0.1),
-        # tf.keras.layers.RandomZoom(0.1),
-        # tf.keras.layers.RandomBrightness(0.1),
-        # tf.keras.layers.RandomContrast(0.1),
-        # tf.keras.layers.GaussianNoise(0.01),  # Add noise for robustness
+        tf.keras.layers.RandomRotation(0.2),
+        tf.keras.layers.RandomZoom(0.2),
+        tf.keras.layers.RandomBrightness(0.2),
+        tf.keras.layers.RandomContrast(0.2),
+        tf.keras.layers.GaussianNoise(0.05),
+        tf.keras.layers.RandomTranslation(0.1, 0.1),
     ])
+    # Lightweight augmentation - only fast operations
+    # data_augmentation = tf.keras.Sequential([
+    #     tf.keras.layers.Rescaling(1./255),
+    #     tf.keras.layers.RandomFlip("horizontal"),  # Very fast
+    #     # Removed slow operations: RandomRotation, RandomZoom, RandomBrightness, RandomContrast
+    # ])
 
-    # --- Build the model using MobileNetV2 as feature extractor ---
-    print("Building MobileNetV2-based model...")
-    base_model = tf.keras.applications.MobileNetV2(
+
+    # --- Build the model using EfficientNetB0 as feature extractor ---
+    print("Building EfficientNetB0-based model...")
+    base_model = tf.keras.applications.EfficientNetB0(
         input_shape=(*IMAGE_SIZE, 3),
         include_top=False,
         weights='imagenet',
@@ -126,7 +134,10 @@ def train_model():
         data_augmentation,
         base_model,
         tf.keras.layers.GlobalAveragePooling2D(),
-        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(0.5),
+        tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(len(class_names), activation='softmax')
@@ -136,7 +147,7 @@ def train_model():
     # Use Adam optimizer, categorical crossentropy, and track accuracy/precision/recall
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-        loss=tf.keras.losses.CategoricalCrossentropy(),
+        loss=tf.keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
         metrics=['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall()]
     )
 
@@ -184,7 +195,7 @@ def train_model():
                       f"Val Recall: {logs['val_recall']:.4f}")
 
     # --- Train the model ---
-    print("Starting training with MobileNetV2 backbone...")
+    print("Starting training with EfficientNetB0 backbone...")
     start_time = time.time()
     
     history = model.fit(
@@ -211,37 +222,60 @@ def train_model():
     print(f"Training Time: {total_time/60:.1f} minutes")
 
     # --- Plot training history ---
-    plt.figure(figsize=(15, 5))
-    
-    plt.subplot(1, 3, 1)
-    plt.plot(history.history['accuracy'], label='Training Accuracy')
-    plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
-    plt.title('Model Accuracy')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.legend()
-    
-    plt.subplot(1, 3, 2)
-    plt.plot(history.history['loss'], label='Training Loss')
-    plt.plot(history.history['val_loss'], label='Validation Loss')
-    plt.title('Model Loss')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-    
-    plt.subplot(1, 3, 3)
-    plt.plot(history.history['precision'], label='Training Precision')
-    plt.plot(history.history['val_precision'], label='Validation Precision')
-    plt.plot(history.history['recall'], label='Training Recall')
-    plt.plot(history.history['val_recall'], label='Validation Recall')
-    plt.title('Model Precision & Recall')
-    plt.xlabel('Epoch')
-    plt.ylabel('Score')
-    plt.legend()
-    
-    plt.tight_layout()
-    plt.savefig(os.path.join(script_dir, 'training_history_gpu_optimized.png'))
-    plt.show()
+    # plt.figure(figsize=(15, 5))
+    # 
+    # plt.subplot(1, 3, 1)
+    # plt.plot(history.history['accuracy'], label='Training Accuracy')
+    # plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+    # plt.title('Model Accuracy')
+    # plt.xlabel('Epoch')
+    # plt.ylabel('Accuracy')
+    # plt.legend()
+    # 
+    # plt.subplot(1, 3, 2)
+    # plt.plot(history.history['loss'], label='Training Loss')
+    # plt.plot(history.history['val_loss'], label='Validation Loss')
+    # plt.title('Model Loss')
+    # plt.xlabel('Epoch')
+    # plt.ylabel('Loss')
+    # plt.legend()
+    # 
+    # plt.subplot(1, 3, 3)
+    # plt.plot(history.history['precision'], label='Training Precision')
+    # plt.plot(history.history['val_precision'], label='Validation Precision')
+    # plt.plot(history.history['recall'], label='Training Recall')
+    # plt.plot(history.history['val_recall'], label='Validation Recall')
+    # plt.title('Model Precision & Recall')
+    # plt.xlabel('Epoch')
+    # plt.ylabel('Score')
+    # plt.legend()
+    # 
+    # plt.tight_layout()
+    # plt.savefig(os.path.join(script_dir, 'training_history_gpu_optimized.png'))
+    # plt.show()
+
+    # Unfreeze the base model for fine-tuning
+    base_model.trainable = True
+    # Optionally, freeze the first N layers
+    # for layer in base_model.layers[:100]:
+    #     layer.trainable = False
+
+    # Re-compile with a lower learning rate
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5),
+        loss=tf.keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
+        metrics=['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall()]
+    )
+
+    # Fine-tune
+    history_finetune = model.fit(
+        train_ds,
+        validation_data=test_ds,
+        epochs=10,  # Fewer epochs for fine-tuning
+        callbacks=[early_stopping, reduce_lr, checkpoint, PerformanceCallback()],
+        verbose=1,
+        class_weight=class_weight
+    )
 
 if __name__ == '__main__':
     train_model() 

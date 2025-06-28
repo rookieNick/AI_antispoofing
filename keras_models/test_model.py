@@ -3,7 +3,7 @@ import tensorflow as tf
 import os
 import numpy as np
 
-NUM_TEST_IMAGES = 65786  # Number of test images to evaluate
+NUM_TEST_IMAGES = 60000  # Number of test images to evaluate (image size must match training, now 112x112)
 
 print("TensorFlow version:", tf.__version__)
 
@@ -91,7 +91,7 @@ def test_model():
         label_mode='categorical',
         color_mode='rgb',
         batch_size=16,
-        image_size=(64, 64),
+        image_size=(112, 112),  # Standardized image size
         shuffle=False
     )
     
@@ -117,6 +117,8 @@ def test_model():
         predictions.extend(batch_predictions[:batch_size])
         true_labels.extend(labels.numpy()[:batch_size])
         image_count += batch_size
+        if image_count % 1000 == 0 or image_count == NUM_TEST_IMAGES:
+            print(f"Processed {image_count} images...")
         if image_count >= NUM_TEST_IMAGES:
             break
     predictions = np.array(predictions)

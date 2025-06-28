@@ -34,7 +34,7 @@ def train_model():
 
     # Ultra-fast settings for GTX 1060 6GB
     BATCH_SIZE = 32  # Very small batch size for maximum speed
-    IMAGE_SIZE = (64, 64)  # Small images for speed
+    IMAGE_SIZE = (112, 112)  # Standardized image size for speed and consistency
     EPOCHS = 30  # Fewer epochs for faster training
     
     print(f"Using batch size: {BATCH_SIZE}")
@@ -91,24 +91,26 @@ def train_model():
 
     # Ultra-lightweight model for speed with augmentation
     model = tf.keras.Sequential([
-        tf.keras.Input(shape=(*IMAGE_SIZE, 3)),
+        tf.keras.layers.Input(shape=(*IMAGE_SIZE, 3)),
         data_augmentation,
-        
-        # Minimal conv layers
-        tf.keras.layers.Conv2D(32, (3, 3), activation='relu'),
+        tf.keras.layers.Conv2D(32, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D((2, 2)),
-        tf.keras.layers.Dropout(0.25),
+        tf.keras.layers.Dropout(0.35),
 
-        tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D((2, 2)),
-        tf.keras.layers.Dropout(0.25),
+        tf.keras.layers.Dropout(0.35),
 
-        tf.keras.layers.Conv2D(64, (3, 3), activation='relu'),
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D((2, 2)),
-        tf.keras.layers.Dropout(0.25),
+        tf.keras.layers.Dropout(0.35),
 
         tf.keras.layers.GlobalAveragePooling2D(),
-        tf.keras.layers.Dense(128, activation='relu'),
+        tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(0.5),
         tf.keras.layers.Dense(len(class_names), activation='softmax')
     ])
