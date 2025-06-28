@@ -38,7 +38,7 @@ def train_model():
     print(f"Model save path: {best_keras_model_path}")
 
     # --- Training configuration ---
-    BATCH_SIZE = 64  # Small batch size to fit in GPU memory
+    BATCH_SIZE = 8  # Small batch size to fit in GPU memory
     IMAGE_SIZE = (112, 112)  # Standardized image size for training and testing
     EPOCHS = 50  # Number of training epochs
     
@@ -70,14 +70,17 @@ def train_model():
         shuffle=False
     )
 
-    # --- Get class names ---
+    # --- Get class names BEFORE caching ---
     class_names = train_ds.class_names
     print(f"Class names: {class_names}")
     print(f"Number of classes: {len(class_names)}")
-    
     # Print dataset info
     print(f"Training samples: {len(train_ds) * BATCH_SIZE}")
     print(f"Test samples: {len(test_ds) * BATCH_SIZE}")
+
+    # --- Cache datasets in RAM (16GB available) ---
+    train_ds = train_ds.cache()
+    test_ds = test_ds.cache()
 
     # --- Compute class weights for imbalanced data ---
     # This helps the model pay more attention to underrepresented classes (e.g., 'live')
@@ -186,13 +189,13 @@ def train_model():
                 self.start_time = time.time()
                 
         def on_epoch_end(self, epoch, logs=None):
-            if epoch % 5 == 0:  # Print every 5 epochs
-                elapsed = time.time() - self.start_time
-                print(f"\nEpoch {epoch}: {elapsed:.1f}s elapsed, "
-                      f"Train Acc: {logs['accuracy']:.4f}, "
-                      f"Val Acc: {logs['val_accuracy']:.4f}, "
-                      f"Val Precision: {logs['val_precision']:.4f}, "
-                      f"Val Recall: {logs['val_recall']:.4f}")
+            # Print at the end of every epoch
+            elapsed = time.time() - self.start_time
+            print(f"\nEpoch {epoch}: {elapsed:.1f}s elapsed, "
+                  f"Train Acc: {logs['accuracy']:.4f}, "
+                  f"Val Acc: {logs['val_accuracy']:.4f}, "
+                  f"Val Precision: {logs['val_precision']:.4f}, "
+                  f"Val Recall: {logs['val_recall']:.4f}")
 
     # --- Train the model ---
     print("Starting training with EfficientNetB0 backbone...")

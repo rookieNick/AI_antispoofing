@@ -148,13 +148,13 @@ def train_model():
                 self.start_time = time.time()
                 
         def on_epoch_end(self, epoch, logs=None):
-            if epoch % 3 == 0:  # Print every 3 epochs
-                elapsed = time.time() - self.start_time
-                print(f"\nEpoch {epoch}: {elapsed:.1f}s elapsed, "
-                      f"Train Acc: {logs['accuracy']:.4f}, "
-                      f"Val Acc: {logs['val_accuracy']:.4f}, "
-                      f"Val Precision: {logs['val_precision']:.4f}, "
-                      f"Val Recall: {logs['val_recall']:.4f}")
+   
+            elapsed = time.time() - self.start_time
+            print(f"\nEpoch {epoch}: {elapsed:.1f}s elapsed, "
+                    f"Train Acc: {logs['accuracy']:.4f}, "
+                    f"Val Acc: {logs['val_accuracy']:.4f}, "
+                    f"Val Precision: {logs['val_precision']:.4f}, "
+                    f"Val Recall: {logs['val_recall']:.4f}")
 
     # Train with maximum speed
     print("Starting ultra-fast GPU training with augmentation...")
