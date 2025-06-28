@@ -47,15 +47,30 @@ def train_model():
 
     # --- Load training dataset ---
     print("Loading training dataset...")
-    train_ds = tf.keras.preprocessing.image_dataset_from_directory(
-        directory=train_dir,
+    train_ds = tf.keras.utils.image_dataset_from_directory(
+        train_dir,
         labels='inferred',
         label_mode='categorical',
         color_mode='rgb',
         batch_size=BATCH_SIZE,
         image_size=IMAGE_SIZE,
         shuffle=True,
-        seed=42
+        seed=42,
+        validation_split=0.2,
+        subset="training",
+    )
+
+    val_ds = tf.keras.utils.image_dataset_from_directory(
+        train_dir,
+        labels='inferred',
+        label_mode='categorical',
+        color_mode='rgb',
+        batch_size=BATCH_SIZE,
+        image_size=IMAGE_SIZE,
+        shuffle=True,
+        seed=42,
+        validation_split=0.2,
+        subset="validation",
     )
 
     # --- Load test dataset ---
@@ -112,52 +127,25 @@ def train_model():
     ])
 
     # --- Model architecture ---
-    # A compact CNN with batch normalization and dropout for regularization
+    # A compact CNN with increased regularization and reduced complexity (only 2 Conv blocks)
     model = tf.keras.Sequential([
         tf.keras.Input(shape=(*IMAGE_SIZE, 3)),
         data_augmentation,
-        
-        # First Conv block
-        tf.keras.layers.Conv2D(32, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.Conv2D(16, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.005)),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D((2, 2)),
-        tf.keras.layers.Dropout(0.5),
-
-        # Second Conv block
-        tf.keras.layers.Conv2D(64, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.MaxPooling2D((2, 2)),
-        tf.keras.layers.Dropout(0.5),
-
-        # Third Conv block
-        tf.keras.layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.MaxPooling2D((2, 2)),
-        tf.keras.layers.Dropout(0.5),
-
-        # Fourth Conv block
-        tf.keras.layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.MaxPooling2D((2, 2)),
-        tf.keras.layers.Dropout(0.5),
-
-        # Global pooling and dense layers
+        tf.keras.layers.Dropout(0.6),
         tf.keras.layers.GlobalAveragePooling2D(),
-        tf.keras.layers.Dense(256, activation='relu'),
+        tf.keras.layers.Dense(32, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.005)),
         tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Dropout(0.5),
-        
-        # Output layer
+        tf.keras.layers.Dropout(0.7),
         tf.keras.layers.Dense(len(class_names), activation='softmax')
     ])
 
     # --- Compile the model ---
     # Use Adam optimizer, categorical crossentropy, and track accuracy/precision/recall
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.0003),
         loss=tf.keras.losses.CategoricalCrossentropy(),
         metrics=['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall()]
     )
@@ -168,7 +156,7 @@ def train_model():
     # --- Callbacks for training ---
     early_stopping = tf.keras.callbacks.EarlyStopping(
         monitor='val_loss', 
-        patience=10,
+        patience=5,
         restore_best_weights=True, 
         verbose=1
     )
@@ -199,11 +187,11 @@ def train_model():
         def on_epoch_end(self, epoch, logs=None):
 
             elapsed = time.time() - self.start_time
-            print(f"\nEpoch {epoch}: {elapsed:.1f}s elapsed, "
-                    f"Train Acc: {logs['accuracy']:.4f}, "
-                    f"Val Acc: {logs['val_accuracy']:.4f}, "
-                    f"Val Precision: {logs['val_precision']:.4f}, "
-                    f"Val Recall: {logs['val_recall']:.4f}")
+            # print(f"\nEpoch {epoch}: {elapsed:.1f}s elapsed, "
+            #         f"Train Acc: {logs['accuracy']:.4f}, "
+            #         f"Val Acc: {logs['val_accuracy']:.4f}, "
+            #         f"Val Precision: {logs['val_precision']:.4f}, "
+            #         f"Val Recall: {logs['val_recall']:.4f}")
 
     # --- Train the model ---
     print("Starting training...")
@@ -214,7 +202,7 @@ def train_model():
         validation_data=test_ds, 
         epochs=EPOCHS,
         callbacks=[early_stopping, reduce_lr, checkpoint, PerformanceCallback()],
-        verbose=1,
+        verbose=2,
         class_weight=class_weight  # <-- This is the key for handling class imbalance
     )
     

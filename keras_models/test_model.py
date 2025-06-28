@@ -3,7 +3,7 @@ import tensorflow as tf
 import os
 import numpy as np
 
-NUM_TEST_IMAGES = 60000  # Number of test images to evaluate (image size must match training, now 112x112)
+NUM_TEST_IMAGES = 65786  # Number of test images to evaluate (image size must match training, now 112x112)
 
 print("TensorFlow version:", tf.__version__)
 
