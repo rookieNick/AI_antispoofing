@@ -38,9 +38,9 @@ def train_model():
     print(f"Model save path: {best_keras_model_path}")
 
     # --- Training configuration ---
-    BATCH_SIZE = 8  # Small batch size to fit in GPU memory
-    IMAGE_SIZE = (112, 112)  # Standardized image size for training and testing
-    EPOCHS = 50  # Number of training epochs
+    BATCH_SIZE = 64  # Small batch size to fit in GPU memory
+    IMAGE_SIZE = (112, 112)  # Image size for training and testing
+    EPOCHS = 30  # Number of training epochs
     
     print(f"Using batch size: {BATCH_SIZE}")
     print(f"Using image size: {IMAGE_SIZE}")
@@ -70,17 +70,14 @@ def train_model():
         shuffle=False
     )
 
-    # --- Get class names BEFORE caching ---
+    # --- Get class names ---
     class_names = train_ds.class_names
     print(f"Class names: {class_names}")
     print(f"Number of classes: {len(class_names)}")
+    
     # Print dataset info
     print(f"Training samples: {len(train_ds) * BATCH_SIZE}")
     print(f"Test samples: {len(test_ds) * BATCH_SIZE}")
-
-    # --- Cache datasets in RAM (16GB available) ---
-    train_ds = train_ds.cache()
-    test_ds = test_ds.cache()
 
     # --- Compute class weights for imbalanced data ---
     # This helps the model pay more attention to underrepresented classes (e.g., 'live')
@@ -107,42 +104,53 @@ def train_model():
     data_augmentation = tf.keras.Sequential([
         tf.keras.layers.Rescaling(1./255),
         tf.keras.layers.RandomFlip("horizontal"),
-        tf.keras.layers.RandomRotation(0.2),
-        tf.keras.layers.RandomZoom(0.2),
-        tf.keras.layers.RandomBrightness(0.2),
-        tf.keras.layers.RandomContrast(0.2),
-        tf.keras.layers.GaussianNoise(0.05),
-        tf.keras.layers.RandomTranslation(0.1, 0.1),
+        # tf.keras.layers.RandomRotation(0.1),
+        # tf.keras.layers.RandomZoom(0.1),
+        # tf.keras.layers.RandomBrightness(0.1),
+        # tf.keras.layers.RandomContrast(0.1),
+        # tf.keras.layers.GaussianNoise(0.01),  # Add noise for robustness
     ])
-    # Lightweight augmentation - only fast operations
-    # data_augmentation = tf.keras.Sequential([
-    #     tf.keras.layers.Rescaling(1./255),
-    #     tf.keras.layers.RandomFlip("horizontal"),  # Very fast
-    #     # Removed slow operations: RandomRotation, RandomZoom, RandomBrightness, RandomContrast
-    # ])
 
-
-    # --- Build the model using EfficientNetB0 as feature extractor ---
-    print("Building EfficientNetB0-based model...")
-    base_model = tf.keras.applications.EfficientNetB0(
-        input_shape=(*IMAGE_SIZE, 3),
-        include_top=False,
-        weights='imagenet',
-        pooling=None
-    )
-    base_model.trainable = False  # Freeze base for initial training
-
+    # --- Model architecture ---
+    # A compact CNN with batch normalization and dropout for regularization
     model = tf.keras.Sequential([
-        tf.keras.layers.Input(shape=(*IMAGE_SIZE, 3)),
+        tf.keras.Input(shape=(*IMAGE_SIZE, 3)),
         data_augmentation,
-        base_model,
+        
+        # First Conv block
+        tf.keras.layers.Conv2D(32, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+        tf.keras.layers.Dropout(0.5),
+
+        # Second Conv block
+        tf.keras.layers.Conv2D(64, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+        tf.keras.layers.Dropout(0.5),
+
+        # Third Conv block
+        tf.keras.layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+        tf.keras.layers.Dropout(0.5),
+
+        # Fourth Conv block
+        tf.keras.layers.Conv2D(128, (3, 3), activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.MaxPooling2D((2, 2)),
+        tf.keras.layers.Dropout(0.5),
+
+        # Global pooling and dense layers
         tf.keras.layers.GlobalAveragePooling2D(),
-        tf.keras.layers.Dense(128, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.Dense(256, activation='relu'),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(64, activation='relu', kernel_regularizer=tf.keras.regularizers.l2(0.001)),
+        tf.keras.layers.Dense(128, activation='relu'),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(0.5),
+        
+        # Output layer
         tf.keras.layers.Dense(len(class_names), activation='softmax')
     ])
 
@@ -150,7 +158,7 @@ def train_model():
     # Use Adam optimizer, categorical crossentropy, and track accuracy/precision/recall
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-        loss=tf.keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
+        loss=tf.keras.losses.CategoricalCrossentropy(),
         metrics=['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall()]
     )
 
@@ -189,16 +197,16 @@ def train_model():
                 self.start_time = time.time()
                 
         def on_epoch_end(self, epoch, logs=None):
-            # Print at the end of every epoch
+
             elapsed = time.time() - self.start_time
             print(f"\nEpoch {epoch}: {elapsed:.1f}s elapsed, "
-                  f"Train Acc: {logs['accuracy']:.4f}, "
-                  f"Val Acc: {logs['val_accuracy']:.4f}, "
-                  f"Val Precision: {logs['val_precision']:.4f}, "
-                  f"Val Recall: {logs['val_recall']:.4f}")
+                    f"Train Acc: {logs['accuracy']:.4f}, "
+                    f"Val Acc: {logs['val_accuracy']:.4f}, "
+                    f"Val Precision: {logs['val_precision']:.4f}, "
+                    f"Val Recall: {logs['val_recall']:.4f}")
 
     # --- Train the model ---
-    print("Starting training with EfficientNetB0 backbone...")
+    print("Starting training...")
     start_time = time.time()
     
     history = model.fit(
@@ -224,61 +232,6 @@ def train_model():
     print(f"Test Recall: {results[3]:.4f}")
     print(f"Training Time: {total_time/60:.1f} minutes")
 
-    # --- Plot training history ---
-    # plt.figure(figsize=(15, 5))
-    # 
-    # plt.subplot(1, 3, 1)
-    # plt.plot(history.history['accuracy'], label='Training Accuracy')
-    # plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
-    # plt.title('Model Accuracy')
-    # plt.xlabel('Epoch')
-    # plt.ylabel('Accuracy')
-    # plt.legend()
-    # 
-    # plt.subplot(1, 3, 2)
-    # plt.plot(history.history['loss'], label='Training Loss')
-    # plt.plot(history.history['val_loss'], label='Validation Loss')
-    # plt.title('Model Loss')
-    # plt.xlabel('Epoch')
-    # plt.ylabel('Loss')
-    # plt.legend()
-    # 
-    # plt.subplot(1, 3, 3)
-    # plt.plot(history.history['precision'], label='Training Precision')
-    # plt.plot(history.history['val_precision'], label='Validation Precision')
-    # plt.plot(history.history['recall'], label='Training Recall')
-    # plt.plot(history.history['val_recall'], label='Validation Recall')
-    # plt.title('Model Precision & Recall')
-    # plt.xlabel('Epoch')
-    # plt.ylabel('Score')
-    # plt.legend()
-    # 
-    # plt.tight_layout()
-    # plt.savefig(os.path.join(script_dir, 'training_history_gpu_optimized.png'))
-    # plt.show()
-
-    # Unfreeze the base model for fine-tuning
-    base_model.trainable = True
-    # Optionally, freeze the first N layers
-    # for layer in base_model.layers[:100]:
-    #     layer.trainable = False
-
-    # Re-compile with a lower learning rate
-    model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5),
-        loss=tf.keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
-        metrics=['accuracy', tf.keras.metrics.Precision(), tf.keras.metrics.Recall()]
-    )
-
-    # Fine-tune
-    history_finetune = model.fit(
-        train_ds,
-        validation_data=test_ds,
-        epochs=10,  # Fewer epochs for fine-tuning
-        callbacks=[early_stopping, reduce_lr, checkpoint, PerformanceCallback()],
-        verbose=1,
-        class_weight=class_weight
-    )
 
 if __name__ == '__main__':
     train_model() 
