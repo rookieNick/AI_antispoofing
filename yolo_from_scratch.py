@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix, ConfusionMatrixDisplay
 from torch.utils.data import DataLoader, Dataset
 import torchvision.transforms as transforms
 import os
@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 import pandas as pd # For saving results to CSV
 import time # For tracking execution time
 from tqdm import tqdm # For progress bar
+import matplotlib.pyplot as plt
 
 # --- ANCHORS (define some reasonable anchors for 224x224 images) ---
 # Format: [(w, h), ...] in pixels, normalized to 224x224
@@ -417,12 +418,16 @@ if __name__ == "__main__":
     # List to store results for each epoch
     results_data = []
 
+    # Define checkpoint path
+    CHECKPOINT_DIR = os.path.join("runs", "yolo_from_scratch", "checkpoints")
+    CHECKPOINT_PATH = os.path.join(CHECKPOINT_DIR, "yolo_anti_spoofing_model.pth")
+
     # Hyperparameters
     num_classes = 2 # live, spoof
     num_bboxes_per_cell = 2
     learning_rate = 1e-4
-    batch_size = 64 # Increased batch size for better GPU utilization
-    num_epochs = 30 # Small number of epochs for demonstration
+    batch_size = 128 # Increased batch size for better GPU utilization
+    num_epochs = 5 # Small number of epochs for demonstration
 
     # Data transformations
     input_size = (113, 113) # Set to your image size
@@ -472,6 +477,15 @@ if __name__ == "__main__":
             return self.head(features)
 
     model = YOLOModel(backbone, yolo_head).to(device)
+
+    # Check for existing model checkpoint
+    os.makedirs(CHECKPOINT_DIR, exist_ok=True) # Ensure checkpoint directory exists
+    if os.path.exists(CHECKPOINT_PATH):
+        print(f"Loading previous model from: {CHECKPOINT_PATH}")
+        model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location=device))
+        print("Previous model loaded successfully.")
+    else:
+        print("No previous model found. Initializing a new model for training.")
 
     # Loss function and optimizer
     criterion = YOLOLoss()
@@ -597,6 +611,11 @@ if __name__ == "__main__":
             print(f"  Recall: {recall:.4f}")
             print(f"  F1 Score: {f1:.4f}")
 
+            # Calculate and print Confusion Matrix
+            cm = confusion_matrix(all_targets, all_preds)
+            print("\n  Confusion Matrix:")
+            print(cm)
+
             # Store results for saving
             results_data.append({
                 'epoch': epoch + 1,
@@ -605,12 +624,38 @@ if __name__ == "__main__":
                 'accuracy': accuracy,
                 'precision': precision,
                 'recall': recall,
-                'f1_score': f1
+                'f1_score': f1,
+                'confusion_matrix': cm.tolist() # Store as list for CSV compatibility
             })
 
     end_total_time = time.time()
     total_duration = end_total_time - start_total_time
     print(f"\n--- Training Complete --- Total Duration: {total_duration:.2f}s")
+
+    # --- Generate Final Confusion Matrix ---
+    print("\nGenerating Final Confusion Matrix...")
+    # Get class names from the dataset
+    class_names = list(train_dataset.class_map.keys()) # Assuming train_dataset and test_dataset have same class_map
+
+    # Plot and save Confusion Matrix
+    final_cm = confusion_matrix(all_targets, all_preds)
+    disp = ConfusionMatrixDisplay(confusion_matrix=final_cm, display_labels=class_names)
+    disp.plot(cmap=plt.cm.Blues)
+    plt.title('Final Confusion Matrix')
+    final_cm_filename = os.path.join(results_dir, 'final_confusion_matrix.png')
+    plt.savefig(final_cm_filename)
+    plt.close() # Close the plot to free memory
+    print(f"Final Confusion matrix saved as {final_cm_filename}")
+
+    # Plot and save Normalized Confusion Matrix
+    final_cm_normalized = confusion_matrix(all_targets, all_preds, normalize='true')
+    disp_normalized = ConfusionMatrixDisplay(confusion_matrix=final_cm_normalized, display_labels=class_names)
+    disp_normalized.plot(cmap=plt.cm.Blues)
+    plt.title('Final Normalized Confusion Matrix')
+    final_cm_normalized_filename = os.path.join(results_dir, 'final_normalized_confusion_matrix.png')
+    plt.savefig(final_cm_normalized_filename)
+    plt.close() # Close the plot to free memory
+    print(f"Final Normalized confusion matrix saved as {final_cm_normalized_filename}")
 
     # Save results to CSV
     results_df = pd.DataFrame(results_data)
@@ -618,10 +663,9 @@ if __name__ == "__main__":
     results_df.to_csv(results_csv_path, index=False)
     print(f"\nTraining results saved to: {results_csv_path}")
 
-    # Save the trained model
-    model_save_path = os.path.join(results_dir, "yolo_anti_spoofing_model.pth")
-    torch.save(model.state_dict(), model_save_path)
-    print(f"Trained model saved to: {model_save_path}")
+    # Save the trained model to the checkpoint path
+    torch.save(model.state_dict(), CHECKPOINT_PATH)
+    print(f"Trained model saved to: {CHECKPOINT_PATH}")
 
     print("\n--- Training Complete ---")
     print("This is a conceptual implementation. For real-world use, further refinements are needed:")
