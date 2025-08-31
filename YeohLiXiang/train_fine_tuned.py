@@ -105,7 +105,6 @@ TTA_CROPS = 5                 # Number of augmented crops for TTA
 # ======================== DEVICE SETUP ========================
 # Configure the computing device and enable optimizations
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print(f"Using device: {device}")
 
 # Enable PyTorch optimizations for better performance
 if torch.cuda.is_available():

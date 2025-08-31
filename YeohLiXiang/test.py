@@ -207,7 +207,7 @@ def test_model(model_path=None):
     # Save test results plots
     print("\nSaving test results...")
     results_dir = create_results_folder()
-    index = get_next_index(results_dir)
+    index = get_next_index(results_dir, "test")
     date_str = datetime.now().strftime('%Y%m%d')
     base_name = f"test_{index}_{date_str}"
     

@@ -13,17 +13,20 @@ def create_results_folder():
         os.makedirs(results_dir)
     return results_dir
 
-def get_next_index(results_dir):
-    """Get the next available index for result files"""
-    existing_files = [f for f in os.listdir(results_dir) if f.startswith('result_')]
+def get_next_index(results_dir, prefix="result"):
+    """Get the next available index for result files with specific prefix"""
+    existing_files = [f for f in os.listdir(results_dir) if f.startswith(f'{prefix}_')]
     if not existing_files:
         return 1
     
     indices = []
     for f in existing_files:
         try:
-            index = int(f.split('_')[1])
-            indices.append(index)
+            # Split by underscore and get the index part (second element)
+            parts = f.split('_')
+            if len(parts) >= 2:
+                index = int(parts[1])
+                indices.append(index)
         except (IndexError, ValueError):
             continue
     
@@ -288,7 +291,7 @@ class MetricsLogger:
     def save_all_plots(self, test_results=None):
         """Save all plots and results in organized folders"""
         results_dir = create_results_folder()
-        index = get_next_index(results_dir)
+        index = get_next_index(results_dir, "train")
         date_str = datetime.now().strftime('%Y%m%d')
         
         base_name = f"train_{index}_{date_str}"
@@ -335,3 +338,5 @@ class MetricsLogger:
             print(f"Metrics summary saved: {summary_path}")
             return base_name, result_folder, test_base_name, test_folder
         
+        # If no test results, return only training results
+        return base_name, result_folder
