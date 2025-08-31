@@ -200,30 +200,55 @@ def plot_accuracy_curve(train_accs, val_accs, save_path):
     plt.close()
 
 def plot_confusion_matrix(confusion_matrix, class_names, save_path):
-    """Plot confusion matrix as heatmap"""
-    plt.figure(figsize=(10, 8))
+    """Plot confusion matrix as heatmap with counts and class-wise accuracy percentages"""
+    plt.figure(figsize=(12, 10))
     
     # Create labels
     labels = ['True Negative', 'False Positive', 'False Negative', 'True Positive']
     values = [confusion_matrix['tn'], confusion_matrix['fp'], 
               confusion_matrix['fn'], confusion_matrix['tp']]
     
+    # Calculate total samples
+    total_samples = sum(values)
+    
     # Reshape for 2x2 matrix
     cm_matrix = np.array([[confusion_matrix['tn'], confusion_matrix['fp']],
                          [confusion_matrix['fn'], confusion_matrix['tp']]])
     
+    # Calculate class-wise accuracy percentages
+    # For actual live class (row 0): correct = TN, total = TN + FP
+    live_total = confusion_matrix['tn'] + confusion_matrix['fp']
+    live_accuracy = (confusion_matrix['tn'] / live_total * 100) if live_total > 0 else 0
+    
+    # For actual spoof class (row 1): correct = TP, total = FN + TP  
+    spoof_total = confusion_matrix['fn'] + confusion_matrix['tp']
+    spoof_accuracy = (confusion_matrix['tp'] / spoof_total * 100) if spoof_total > 0 else 0
+    
+    # Create custom annotations with count and class accuracy
+    annotations = np.empty_like(cm_matrix, dtype=object)
+    # Top row (Actual Live): TN and FP
+    annotations[0, 0] = f'{cm_matrix[0, 0]:,}\n({live_accuracy:.1f}%)'  # TN - correct live prediction
+    annotations[0, 1] = f'{cm_matrix[0, 1]:,}\n({100-live_accuracy:.1f}%)'  # FP - wrong live prediction
+    # Bottom row (Actual Spoof): FN and TP  
+    annotations[1, 0] = f'{cm_matrix[1, 0]:,}\n({100-spoof_accuracy:.1f}%)'  # FN - wrong spoof prediction
+    annotations[1, 1] = f'{cm_matrix[1, 1]:,}\n({spoof_accuracy:.1f}%)'  # TP - correct spoof prediction
+    
     # Create heatmap
-    sns.heatmap(cm_matrix, annot=True, fmt='d', cmap='Blues', 
+    sns.heatmap(cm_matrix, annot=annotations, fmt='', cmap='Blues', 
                 xticklabels=['Predicted Live', 'Predicted Spoof'],
                 yticklabels=['Actual Live', 'Actual Spoof'],
-                cbar_kws={'label': 'Count'})
+                cbar_kws={'label': 'Count'},
+                annot_kws={'fontsize': 12, 'ha': 'center', 'va': 'center'})
     
-    plt.title('Confusion Matrix', fontsize=16, fontweight='bold', pad=20)
+    plt.title('Confusion Matrix\n(Count and Class Accuracy %)', fontsize=16, fontweight='bold', pad=20)
     plt.xlabel('Predicted Label', fontsize=12, fontweight='bold')
     plt.ylabel('True Label', fontsize=12, fontweight='bold')
     
-    # Add text annotations
-    plt.text(0.5, -0.15, f'Total Samples: {sum(values)}', 
+    # Add text annotations with summary
+    overall_accuracy = (cm_matrix[0,0] + cm_matrix[1,1])/total_samples*100
+    plt.text(0.5, -0.12, f'Total Samples: {total_samples:,}', 
+             ha='center', va='center', transform=plt.gca().transAxes, fontsize=11, fontweight='bold')
+    plt.text(0.5, -0.16, f'Overall Accuracy: {overall_accuracy:.1f}% | Live Accuracy: {live_accuracy:.1f}% | Spoof Accuracy: {spoof_accuracy:.1f}%', 
              ha='center', va='center', transform=plt.gca().transAxes, fontsize=11)
     
     plt.tight_layout()

@@ -175,11 +175,22 @@ def test_model(model_path=None):
     print(f"Test F1-Score: {test_f1:.4f}")
     print(f"Test Specificity: {test_specificity:.4f}")
     
-    print(f"\n=== Confusion Matrix ===")
+    print(f"\n=== Confusion Matrix (Raw Counts) ===")
     print(f"True Positives (TP): {test_tp}")
     print(f"True Negatives (TN): {test_tn}")
     print(f"False Positives (FP): {test_fp}")
     print(f"False Negatives (FN): {test_fn}")
+    
+    print(f"\n=== Class-wise Accuracy ===")
+    # Calculate class-wise accuracy percentages
+    live_total = test_tn + test_fp  # Total actual live samples
+    spoof_total = test_fn + test_tp  # Total actual spoof samples
+    live_accuracy = (test_tn / live_total * 100) if live_total > 0 else 0
+    spoof_accuracy = (test_tp / spoof_total * 100) if spoof_total > 0 else 0
+    
+    print(f"Live Detection Accuracy: {live_accuracy:.1f}% ({test_tn} correct out of {live_total} live samples)")
+    print(f"Spoof Detection Accuracy: {spoof_accuracy:.1f}% ({test_tp} correct out of {spoof_total} spoof samples)")
+    print(f"Overall Accuracy: {test_acc:.1f}% ({test_correct} correct out of {test_total} total samples)")
     
     print(f"\n=== Class-wise Performance ===")
     print(f"Live Detection (Class 0):")
