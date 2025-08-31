@@ -92,7 +92,7 @@ ETA_MIN = 1e-7                # Minimum learning rate (prevents complete stagnat
 
 # File and Directory Configuration
 MODEL_DIR = "model"           # Directory for saving trained models
-MODEL_NAME = "best_model_fine_tuned.pth"  # Filename for best model weights
+MODEL_NAME = "cnn_pytorch.pth"  # Filename for best model weights
 
 # Training Optimization Flags
 USE_AMP = True                # Automatic Mixed Precision for faster training
