@@ -13,6 +13,10 @@ venv/
 # Datasets
 casia-fasd/
 
+# Ignore casia-fasd zip files
+casia-fasd.zip
+casia-fasd*.zip
+
 # Operating System files
 .DS_Store
 Thumbs.db
