@@ -1,32 +1,32 @@
 # Face Anti-Spoofing with TensorFlow/Keras and CASIA-FASD
 
 ## Overview
-This project implements a deep learning pipeline for face anti-spoofing (presentation attack detection) using the CASIA-FASD dataset. It uses TensorFlow and Keras to train and evaluate a convolutional neural network (CNN) to distinguish between real (live) and spoofed faces.
+This project implements a deep learning pipeline for face anti-spoofing (presentation attack detection) using the CASIA-FASD dataset. It uses PyTorch to train and evaluate a convolutional neural network (CNN) to distinguish between real (live) and spoofed faces.
 
 - **Dataset:** [CASIA-FASD](http://www.cbsr.ia.ac.cn/english/FASDB_database.asp)
-- **Framework:** TensorFlow 2.x, Keras
+- **Framework:** PyTorch (CUDA/cuDNN enabled)
 - **Main scripts:**
-  - `train_model_accurate.py` — Train a robust CNN with augmentation and class weighting
+  - `train_model_pytorch.py` — Train a robust CNN with augmentation and class weighting
   - `test_model.py` — Evaluate the trained model on the test set and report per-class results
 
 ---
 
 ## Requirements
-- Python 3.8–3.10 (recommended: use Miniconda)
-- TensorFlow 2.10.x (for GPU on Windows)
-- CUDA 11.2, cuDNN 8.1 (for GPU support)
-- numpy, matplotlib
+* Python 3.8–3.10 (recommended: use Miniconda)
+* PyTorch (with CUDA support)
+* CUDA 12.8, cuDNN (for GPU support)
+* torchvision, numpy, matplotlib
 
 Install dependencies (if not already):
 ```
-pip install tensorflow==2.10.1 numpy matplotlib
+pip install torch torchvision numpy matplotlib
 ```
 Or, for GPU (recommended):
 ```
-conda create -n tf python=3.10
-conda activate tf
-conda install -c conda-forge cudatoolkit=11.2 cudnn=8.1
-pip install tensorflow==2.10.1 numpy matplotlib
+conda create -n torch python=3.10
+conda activate torch
+conda install pytorch torchvision torchaudio pytorch-cuda=12.8 -c pytorch -c nvidia
+pip install numpy matplotlib
 ```
 
 ---
