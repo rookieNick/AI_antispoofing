@@ -6,12 +6,13 @@ import os
 from model import OptimizedCNN
 from plot_utils import MetricsLogger, create_results_folder, get_next_index, plot_confusion_matrix, save_metrics_summary, plot_roc_curve
 from datetime import datetime
+import matplotlib.pyplot as plt
 
 # ======================== CONFIGURATION VARIABLES ========================
 # Test Parameters
 BATCH_SIZE = 128              # Batch size for testing
 IMAGE_SIZE = (112, 112)       # Input image size (height, width)
-SAMPLE_LIMIT = 200           # Limit test dataset to this many samples; set to -1 to use all samples
+SAMPLE_LIMIT = -1             # Limit test dataset to this many samples; set to -1 to use all samples
 
 # Data Loading
 NUM_WORKERS = 6               # Number of data loading workers
@@ -208,10 +209,10 @@ def test_model(model_path=None):
     results_dir = create_results_folder()
     index = get_next_index(results_dir)
     date_str = datetime.now().strftime('%Y%m%d')
-    base_name = f"result_{index}_{date_str}"
+    base_name = f"test_{index}_{date_str}"
     
     # Create a dedicated folder for this test result set
-    result_folder = os.path.join(results_dir, f"{base_name}_test")
+    result_folder = os.path.join(results_dir, f"{base_name}")
     if not os.path.exists(result_folder):
         os.makedirs(result_folder)
     

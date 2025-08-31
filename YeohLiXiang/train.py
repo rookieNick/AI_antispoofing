@@ -16,7 +16,7 @@ IMAGE_SIZE = (112, 112)       # Input image size (height, width)
 EPOCHS = 50                   # Maximum number of training epochs
 LEARNING_RATE = 0.001         # Initial learning rate
 WEIGHT_DECAY = 0.01           # L2 regularization strength
-SAMPLE_LIMIT = 200            # Limit training dataset to this many samples; set to -1 to use all samples
+SAMPLE_LIMIT = -1            # Limit training dataset to this many samples; set to -1 to use all samples
 
 # Early Stopping & Scheduling
 PATIENCE = 10                 # Early stopping patience (epochs)

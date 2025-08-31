@@ -291,9 +291,8 @@ class MetricsLogger:
         index = get_next_index(results_dir)
         date_str = datetime.now().strftime('%Y%m%d')
         
-        base_name = f"result_{index}_{date_str}"
-        
-        # Create a dedicated folder for this result set
+        base_name = f"train_{index}_{date_str}"
+        # Create a dedicated folder for this training result set
         result_folder = os.path.join(results_dir, base_name)
         if not os.path.exists(result_folder):
             os.makedirs(result_folder)
@@ -317,20 +316,22 @@ class MetricsLogger:
         
         # Save test results if provided
         if test_results:
+            test_base_name = f"test_{index}_{date_str}"
+            test_folder = os.path.join(results_dir, test_base_name)
+            if not os.path.exists(test_folder):
+                os.makedirs(test_folder)
             # Confusion matrix
-            cm_path = os.path.join(result_folder, "confusion_matrix.png")
+            cm_path = os.path.join(test_folder, "confusion_matrix.png")
             plot_confusion_matrix(test_results['confusion_matrix'], ['live', 'spoof'], cm_path)
             print(f"Confusion matrix saved: {cm_path}")
-            
             # ROC curve (if y_true and y_scores are provided)
             if 'y_true' in test_results and 'y_scores' in test_results:
-                roc_path = os.path.join(result_folder, "roc_curve.png")
+                roc_path = os.path.join(test_folder, "roc_curve.png")
                 roc_auc = plot_roc_curve(test_results['y_true'], test_results['y_scores'], roc_path)
                 print(f"ROC curve saved: {roc_path} (AUC: {roc_auc:.4f})")
-            
             # Metrics summary
-            summary_path = os.path.join(result_folder, "summary.txt")
+            summary_path = os.path.join(test_folder, "summary.txt")
             save_metrics_summary(test_results, summary_path)
             print(f"Metrics summary saved: {summary_path}")
+            return base_name, result_folder, test_base_name, test_folder
         
-        return base_name, result_folder
