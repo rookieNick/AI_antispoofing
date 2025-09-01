@@ -415,21 +415,32 @@ def train_model():
     # Split dataset into training and validation (80/20 split)
     train_size = int(0.8 * len(full_dataset))
     val_size = len(full_dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(
-        full_dataset, [train_size, val_size],
+    train_indices, val_indices = torch.utils.data.random_split(
+        range(len(full_dataset)), [train_size, val_size],
         generator=torch.Generator().manual_seed(42)  # Reproducible split
     )
     
-    # Apply validation transform to validation set
-    # This ensures validation samples are not augmented
-    val_dataset.dataset.transform = val_transform
+    # Create separate datasets with appropriate transforms
+    # Training dataset with augmentation
+    train_data = datasets.ImageFolder(
+        root=train_dir,
+        transform=train_transform
+    )
+    train_dataset = torch.utils.data.Subset(train_data, train_indices.indices)
+    
+    # Validation dataset without augmentation
+    val_data = datasets.ImageFolder(
+        root=train_dir,
+        transform=val_transform
+    )
+    val_dataset = torch.utils.data.Subset(val_data, val_indices.indices)
     
     # =========================
     # BALANCED SAMPLING SETUP
     # =========================
     # Calculate class weights for balanced sampling
     # This addresses class imbalance in the training data
-    train_targets = [full_dataset[i][1] for i in train_dataset.indices]
+    train_targets = [train_data[i][1] for i in train_indices.indices]
     class_counts = Counter(train_targets)
     total_samples = len(train_targets)
     
@@ -501,7 +512,7 @@ def train_model():
     )
     
     # Mixed precision scaler for faster training and reduced memory usage
-    scaler = torch.cuda.amp.GradScaler() if USE_AMP and torch.cuda.is_available() else None
+    scaler = torch.amp.GradScaler('cuda') if USE_AMP and torch.cuda.is_available() else None
     
     # =========================
     # MODEL SAVING SETUP
