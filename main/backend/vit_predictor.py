@@ -58,16 +58,25 @@ def predict_image_vit(img: Image.Image):
         return 0, 0.0
     
     try:
-        # Use the exact same transform and prediction as test_one.py
+        # Ensure image is RGB before transform
+        img_rgb = img.convert("RGB")
         transform = vit_model.test_transform
-        input_tensor = transform(img).unsqueeze(0).to(vit_model.device)
+        input_tensor = transform(img_rgb).unsqueeze(0).to(vit_model.device)
         
         with torch.no_grad():
             outputs = vit_model.model(input_tensor)
             probs = torch.softmax(outputs.logits, dim=1)
+            print(f"[DEBUG] ViT softmax probabilities: {probs.cpu().numpy().squeeze()}")
             pred_class = probs.argmax(dim=1).item()
             confidence = probs[0, pred_class].item()
+            print(f"[DEBUG] Predicted class: {CLASS_NAMES[pred_class]}, Confidence: {confidence}")
             return pred_class, confidence
     except Exception as e:
         print(f"[ERROR] VIT prediction failed: {e}")
         return 0, 0.0
+
+
+if __name__ == "__main__":
+    from PIL import Image
+    img = Image.open("backend/phone.png").convert("RGB")
+    predict_image_vit(img)
