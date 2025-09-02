@@ -144,6 +144,38 @@ ai asgmt/
    ```bash
    cd YeohLiXiang
    pip install -r requirements.txt
+   ## 🏗️ Environment Setup: Per-Folder Virtual Environments
+
+   To avoid dependency conflicts and keep each part of the project isolated, create and activate a separate virtual environment in each major folder (`main`, `YeohLiXiang`, and `dataset`).
+
+   ### 1. Main Application
+   ```powershell
+   cd main
+   python -m venv venv
+   venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+   ### 2. YeohLiXiang (CNN Training & Testing)
+   ```powershell
+   cd YeohLiXiang
+   python -m venv venv
+   venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+   ### 3. Dataset Utilities
+   ```powershell
+   cd dataset
+   python -m venv venv
+   venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+   **Note:**
+   - Always activate the correct environment before running scripts in each folder.
+   - If you use macOS/Linux, replace `venv\Scripts\activate` with `source venv/bin/activate`.
+   - This setup ensures each folder has its own dependencies and avoids version conflicts.
    python train.py
    ```
 
