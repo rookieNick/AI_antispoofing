@@ -102,28 +102,16 @@ def predict_image_with_selected_model():
     if selected_image is None:
         result_output.insert(tk.END, "No image selected. Please import an image first.\n")
         return
-    model_type = model_var.get()
-    if model_type == "CNN":
-        # Use CNN model (cnn_pytorch.pth)
-        from backend import predictor
-        label_id, confidence = predictor.predict_image(selected_image)
-        label = "Live" if label_id == 0 else "Spoof"
-        result_output.insert(tk.END, f"Prediction (CNN): {label} | Confidence: {confidence:.2f}\n")
-    elif model_type == "CDCN":
-        result_output.insert(tk.END, "CDCN model prediction not implemented yet.\n")
-    elif model_type == "VIT":
-        # Use ViT model
-        try:
-            from backend import vit_predictor
-            label_id, confidence = vit_predictor.predict_image_vit(selected_image)
-            label = "Live" if label_id == 1 else "Spoof"  # VIT: 0=spoof, 1=live
-            result_output.insert(tk.END, f"Prediction (VIT): {label} | Confidence: {confidence:.2f}\n")
-        except ImportError as e:
-            result_output.insert(tk.END, f"VIT model not available: {e}\n")
-        except Exception as e:
-            result_output.insert(tk.END, f"VIT prediction error: {e}\n")
-    else:
-        result_output.insert(tk.END, f"Unknown model type: {model_type}\n")
+    
+    try:
+        model_type = model_var.get()
+        from controller.image_controller import get_prediction_label
+        label, confidence = get_prediction_label(selected_image, model_type)
+        result_output.insert(tk.END, f"Prediction ({model_type}): {label} | Confidence: {confidence:.2f}\n")
+    except ImportError as e:
+        result_output.insert(tk.END, f"Error: Model {model_type} not available: {str(e)}\n")
+    except Exception as e:
+        result_output.insert(tk.END, f"Error during prediction with {model_type}: {str(e)}\n")
 
 
 def start_webcam_and_recognition():
