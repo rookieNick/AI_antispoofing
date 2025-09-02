@@ -28,6 +28,10 @@ def load_model():
 model = load_model()
 
 def predict_image(img: Image.Image):
+    if model is None:
+        print("[ERROR] Model not loaded!")
+        return 0, 0.0
+    
     preprocess = transforms.Compose([
         transforms.Resize(IMAGE_SIZE),
         transforms.ToTensor(),
@@ -35,8 +39,10 @@ def predict_image(img: Image.Image):
     ])
     img = img.convert('RGB')
     input_tensor = preprocess(img).unsqueeze(0)
+    
     with torch.no_grad():
         outputs = model(input_tensor)
         probabilities = torch.softmax(outputs, dim=1)
         pred_class = probabilities.argmax(dim=1).item()
-        return pred_class
+        confidence = probabilities[0, pred_class].item()
+        return pred_class, confidence

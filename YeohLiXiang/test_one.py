@@ -50,5 +50,5 @@ def predict_image(image_path, model_path=None):
 
 if __name__ == "__main__":
     # Specify your image path here
-    image_path = r"live_1.png"  # <-- Change this to your image file
+    image_path = "../dataset/casia-fasd/test/spoof/s30vHR_4f259.png"  # <-- Change this to your image file
     predict_image(image_path)
