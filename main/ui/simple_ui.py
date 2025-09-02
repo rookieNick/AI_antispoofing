@@ -112,7 +112,16 @@ def predict_image_with_selected_model():
     elif model_type == "CDCN":
         result_output.insert(tk.END, "CDCN model prediction not implemented yet.\n")
     elif model_type == "VIT":
-        result_output.insert(tk.END, "VIT model prediction not implemented yet.\n")
+        # Use ViT model
+        try:
+            from backend import vit_predictor
+            label_id, confidence = vit_predictor.predict_image_vit(selected_image)
+            label = "Live" if label_id == 1 else "Spoof"  # VIT: 0=spoof, 1=live
+            result_output.insert(tk.END, f"Prediction (VIT): {label} | Confidence: {confidence:.2f}\n")
+        except ImportError as e:
+            result_output.insert(tk.END, f"VIT model not available: {e}\n")
+        except Exception as e:
+            result_output.insert(tk.END, f"VIT prediction error: {e}\n")
     else:
         result_output.insert(tk.END, f"Unknown model type: {model_type}\n")
 
