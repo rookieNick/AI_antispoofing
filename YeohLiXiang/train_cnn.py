@@ -26,7 +26,7 @@ import os
 import time
 import numpy as np
 from collections import Counter
-from model import OptimizedCNN  # Custom CNN architecture
+from YeohLiXiang.model_cnn import OptimizedCNN  # Custom CNN architecture
 from plot_utils import MetricsLogger  # Custom plotting utilities
 import random
 

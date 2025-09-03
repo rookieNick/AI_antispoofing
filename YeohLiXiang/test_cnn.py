@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import os
-from model import OptimizedCNN
+from YeohLiXiang.model_cnn import OptimizedCNN
 from plot_utils import MetricsLogger, create_results_folder, get_next_index, plot_confusion_matrix, save_metrics_summary, plot_roc_curve
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -221,7 +221,6 @@ def test_model(model_path=None):
     index = get_next_index(results_dir, "test")
     date_str = datetime.now().strftime('%Y%m%d')
     base_name = f"test_{index}_{date_str}"
-    
     # Create a dedicated folder for this test result set
     result_folder = os.path.join(results_dir, f"{base_name}")
     if not os.path.exists(result_folder):

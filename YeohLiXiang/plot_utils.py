@@ -5,10 +5,17 @@ import os
 from datetime import datetime
 from sklearn.metrics import roc_curve, auc
 
-def create_results_folder():
-    """Create results folder if it doesn't exist"""
+def create_results_folder(folder_type=None):
+    """Create results folder for patch_cnn, vgg16, or dpcnn if it doesn't exist"""
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    results_dir = os.path.join(script_dir, "results")
+    if folder_type == 'patch_cnn':
+        results_dir = os.path.join(script_dir, "results_patch_cnn")
+    elif folder_type == 'vgg16':
+        results_dir = os.path.join(script_dir, "results_vgg16")
+    elif folder_type == 'dpcnn':
+        results_dir = os.path.join(script_dir, "results_dpcnn")
+    else:
+        results_dir = os.path.join(script_dir, "results")
     if not os.path.exists(results_dir):
         os.makedirs(results_dir)
     return results_dir
@@ -257,6 +264,21 @@ def plot_confusion_matrix(confusion_matrix, class_names, save_path):
 
 def save_metrics_summary(results, save_path):
     """Save detailed metrics summary to text file"""
+    # Use .get with defaults to avoid KeyError when some metrics are missing
+    accuracy = results.get('accuracy', None)
+    loss = results.get('loss', None)
+    precision = results.get('precision', None)
+    recall = results.get('recall', None)
+    f1_score = results.get('f1_score', None)
+    specificity = results.get('specificity', None)
+    cm = results.get('confusion_matrix', {})
+
+    tp = cm.get('tp', 0)
+    tn = cm.get('tn', 0)
+    fp = cm.get('fp', 0)
+    fn = cm.get('fn', 0)
+    total_samples = tp + tn + fp + fn
+
     with open(save_path, 'w') as f:
         f.write("=" * 50 + "\n")
         f.write("         MODEL EVALUATION RESULTS\n")
@@ -267,32 +289,73 @@ def save_metrics_summary(results, save_path):
         
         f.write("PERFORMANCE METRICS:\n")
         f.write("-" * 30 + "\n")
-        f.write(f"Test Accuracy:    {results['accuracy']:.2f}%\n")
-        f.write(f"Test Loss:        {results['loss']:.4f}\n")
-        f.write(f"Test Precision:   {results['precision']:.4f}\n")
-        f.write(f"Test Recall:      {results['recall']:.4f}\n")
-        f.write(f"Test F1-Score:    {results['f1_score']:.4f}\n")
-        f.write(f"Test Specificity: {results['specificity']:.4f}\n")
+        if accuracy is not None:
+            f.write(f"Test Accuracy:    {accuracy:.2f}%\n")
+        else:
+            f.write("Test Accuracy:    N/A\n")
+
+        if loss is not None:
+            f.write(f"Test Loss:        {loss:.4f}\n")
+        else:
+            f.write("Test Loss:        N/A\n")
+
+        if precision is not None:
+            f.write(f"Test Precision:   {precision:.4f}\n")
+        else:
+            f.write("Test Precision:   N/A\n")
+
+        if recall is not None:
+            f.write(f"Test Recall:      {recall:.4f}\n")
+        else:
+            f.write("Test Recall:      N/A\n")
+
+        if f1_score is not None:
+            f.write(f"Test F1-Score:    {f1_score:.4f}\n")
+        else:
+            f.write("Test F1-Score:    N/A\n")
+
+        if specificity is not None:
+            f.write(f"Test Specificity: {specificity:.4f}\n")
+        else:
+            f.write("Test Specificity: N/A\n")
+
         f.write("\n")
         
         f.write("CONFUSION MATRIX:\n")
         f.write("-" * 30 + "\n")
-        cm = results['confusion_matrix']
-        f.write(f"True Positives:   {cm['tp']}\n")
-        f.write(f"True Negatives:   {cm['tn']}\n")
-        f.write(f"False Positives:  {cm['fp']}\n")
-        f.write(f"False Negatives:  {cm['fn']}\n")
-        f.write(f"Total Samples:    {cm['tp'] + cm['tn'] + cm['fp'] + cm['fn']}\n")
+        f.write(f"True Positives:   {tp}\n")
+        f.write(f"True Negatives:   {tn}\n")
+        f.write(f"False Positives:  {fp}\n")
+        f.write(f"False Negatives:  {fn}\n")
+        f.write(f"Total Samples:    {total_samples}\n")
         f.write("\n")
         
         f.write("CLASS-WISE PERFORMANCE:\n")
         f.write("-" * 30 + "\n")
-        f.write(f"Live Detection (Class 0):\n")
-        f.write(f"  - Sensitivity: {cm['tn']/(cm['tn'] + cm['fp']):.4f}\n")
-        f.write(f"  - Specificity: {results['specificity']:.4f}\n")
+        # Avoid ZeroDivisionError when computing sensitivities
+        live_sensitivity = (tn / (tn + fp)) if (tn + fp) > 0 else None
+        if live_sensitivity is not None:
+            f.write(f"Live Detection (Class 0):\n")
+            f.write(f"  - Sensitivity: {live_sensitivity:.4f}\n")
+        else:
+            f.write("Live Detection (Class 0):\n")
+            f.write("  - Sensitivity: N/A\n")
+
+        if specificity is not None:
+            f.write(f"  - Specificity: {specificity:.4f}\n")
+        else:
+            f.write("  - Specificity: N/A\n")
+
         f.write(f"Spoof Detection (Class 1):\n")
-        f.write(f"  - Sensitivity: {results['recall']:.4f}\n")
-        f.write(f"  - Precision:   {results['precision']:.4f}\n")
+        if recall is not None:
+            f.write(f"  - Sensitivity: {recall:.4f}\n")
+        else:
+            f.write("  - Sensitivity: N/A\n")
+
+        if precision is not None:
+            f.write(f"  - Precision:   {precision:.4f}\n")
+        else:
+            f.write("  - Precision:   N/A\n")
 
 class MetricsLogger:
     """Class to track training metrics during training"""
@@ -313,9 +376,9 @@ class MetricsLogger:
         self.val_precisions.append(val_precision)
         self.val_recalls.append(val_recall)
     
-    def save_all_plots(self, test_results=None):
+    def save_all_plots(self, test_results=None, folder_type=None):
         """Save all plots and results in organized folders"""
-        results_dir = create_results_folder()
+        results_dir = create_results_folder(folder_type)
         index = get_next_index(results_dir, "train")
         date_str = datetime.now().strftime('%Y%m%d')
         

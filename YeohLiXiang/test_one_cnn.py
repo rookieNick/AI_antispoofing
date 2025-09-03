@@ -3,7 +3,7 @@ import torch.nn as nn
 from torchvision import transforms
 from PIL import Image
 import os
-from model import OptimizedCNN
+from model_cnn import OptimizedCNN
 
 # Configuration
 MODEL_FILENAME = 'cnn_pytorch.pth'
@@ -21,7 +21,7 @@ def predict_image(image_path, model_path=None):
     num_classes = len(CLASS_NAMES)
     model = OptimizedCNN(num_classes=num_classes).to(device)
     if os.path.exists(model_path):
-        model.load_state_dict(torch.load(model_path, map_location=device))
+        model.load_state_dict(torch.load(model_path, map_location=device, weights_only=False))
         model.eval()
     else:
         print(f"Model file not found: {model_path}")
