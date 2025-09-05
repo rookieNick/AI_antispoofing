@@ -24,3 +24,7 @@ Thumbs.db
 # Ignore picture files in dataset folder only (not root)
 dataset/**/*.png
 dataset/**/*.pic
+
+vit_cache
+
+vit-antispoofing
