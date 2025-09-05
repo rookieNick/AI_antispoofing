@@ -64,3 +64,18 @@ python resnet\resnet_gui.py
 
 python efficientNet\efficientnet_meta_gui.py
 ```
+
+### 7. Run Training Script
+
+To train the model, first navigate to the parent directory:
+```bash
+cd ../
+```
+Then run the training script:
+```bash
+python GohWenKang/VIT/train_vit.py
+
+python GohWenKang\resnet\TrainResNetAttention.py
+
+python GohWenKang\efficientNet\Train_EfficientNet_Meta.py
+```

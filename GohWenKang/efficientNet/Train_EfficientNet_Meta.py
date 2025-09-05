@@ -1227,7 +1227,7 @@ def main():
         'dropout_rate': 0.4,
         'efficientnet_version': 'b0',       # Best balance for RTX 3050
         'num_workers': 4,                   # Optimized for Ryzen 7 7435HS (8 cores)
-        'save_dir': 'efficientnet_models',
+        'save_dir': 'GohWenKang/efficientNet/efficientnet_models',
         'resume_checkpoint': None,
         'meta_learning_rate': 0.15          # Meta-learning adaptation rate
     }

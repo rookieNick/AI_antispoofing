@@ -104,7 +104,7 @@ T_MULT = 2                    # Restart period multiplier
 ETA_MIN = 1e-7                # Minimum learning rate
 
 # File and Directory Configuration
-MODEL_DIR = "vit_models"      # Directory for saving trained models
+MODEL_DIR = "GohWenKang/VIT/vit_models"      # Directory for saving trained models
 MODEL_NAME_SAVE = "best_vit_antispoofing.pth"  # Filename for best model weights
 
 # Training Optimization Flags
@@ -610,7 +610,7 @@ class ViTAntiSpoofing:
                 self.model_name,
                 num_labels=self.num_classes,
                 ignore_mismatched_sizes=True,
-                cache_dir='./vit_cache'  # Cache downloaded models
+                cache_dir='GohWenKang/VIT/vit_cache'  # Cache downloaded models
             )
             
             # Enable gradient checkpointing for memory efficiency
