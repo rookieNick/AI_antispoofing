@@ -24,7 +24,7 @@ import torch.backends.cudnn as cudnn
 
 IMAGE_SIZE = (112, 112)       # Input image size
 BATCH_SIZE = 64               # Batch size for training
-EPOCHS = 30                   # Maximum number of training epochs
+EPOCHS = 100                   # Maximum number of training epochs
 LEARNING_RATE = 0.001         # Initial learning rate
 WEIGHT_DECAY = 0.0001         # L2 regularization strength
 SAMPLE_LIMIT = 5000           # Limit training dataset size for speed
@@ -34,12 +34,12 @@ MODEL_TYPE = 'standard'       # 'standard' or 'lightweight'
 DROPOUT_RATE = 0.5            # Dropout rate for regularization
 
 # Early Stopping & Scheduling Parameters
-PATIENCE = 5                 # Patience for early stopping
+PATIENCE = 15                 # Patience for early stopping
 LABEL_SMOOTHING = 0.1         # Label smoothing factor
 GRADIENT_CLIP_NORM = 1.0      # Gradient clipping
 
 # Data Loading Configuration
-NUM_WORKERS = min(8, os.cpu_count() or 4)  # Dynamic worker count based on CPU cores
+NUM_WORKERS = 10  # Dynamic worker count based on CPU cores
 PIN_MEMORY = True
 PERSISTENT_WORKERS = True
 

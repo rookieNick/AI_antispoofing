@@ -23,7 +23,7 @@ from plot_utils import MetricsLogger  # Custom plotting utilities
 # Training Parameters
 BATCH_SIZE = 128              # Increased batch size for faster training
 IMAGE_SIZE = (112, 112)       # Input image dimensions
-EPOCHS = 30                   # Maximum number of training epochs
+EPOCHS = 100                   # Maximum number of training epochs
 LEARNING_RATE = 0.0001        # Lower learning rate for better convergence
 WEIGHT_DECAY = 0.01           # L2 regularization strength
 SAMPLE_LIMIT = 5000         # Limit training dataset size to first 10,000 images
@@ -39,7 +39,7 @@ LABEL_SMOOTHING = 0.0         # Disable label smoothing for initial runs
 GRADIENT_CLIP_NORM = 1.0      # Gradient clipping
 
 # Data Loading Configuration
-NUM_WORKERS = 8               # Reduced workers due to patch processing
+NUM_WORKERS = 10               # Reduced workers due to patch processing
 PIN_MEMORY = True
 PERSISTENT_WORKERS = True
 

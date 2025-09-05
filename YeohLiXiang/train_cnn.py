@@ -40,7 +40,7 @@ BATCH_SIZE = 64               # Smaller batches provide better gradient estimate
                               # and improved generalization, especially with limited data
 IMAGE_SIZE = (128, 128)       # Higher resolution captures finer facial details
                               # crucial for anti-spoofing (texture, pores, etc.)
-EPOCHS = 30                  # More training epochs for thorough convergence
+EPOCHS = 100                  # More training epochs for thorough convergence
 LEARNING_RATE = 0.0005        # Lower learning rate for careful fine-tuning
                               # and stable convergence to optimal weights
 WEIGHT_DECAY = 0.005          # Reduced weight decay to allow model flexibility
@@ -48,7 +48,7 @@ WEIGHT_DECAY = 0.005          # Reduced weight decay to allow model flexibility
 SAMPLE_LIMIT = 5000             # Use complete dataset for maximum training data
 
 # Advanced Training Techniques
-PATIENCE = 5                 # Increased patience allows more thorough training
+PATIENCE = 15                 # Increased patience allows more thorough training
                               # before early stopping kicks in
 LABEL_SMOOTHING = 0.15        # Higher label smoothing prevents overconfident
                               # predictions and improves generalization
@@ -62,7 +62,7 @@ MIXUP_PROB = 0.5              # Probability of applying mixup/cutmix augmentatio
                               # Balances augmented vs. original samples
 
 # Data Loading Optimization
-NUM_WORKERS = 8               # More workers for faster data pipeline
+NUM_WORKERS = 10               # More workers for faster data pipeline
                               # Reduces GPU idle time during training
 PIN_MEMORY = True             # Keep data in pinned memory for faster GPU transfer
 PERSISTENT_WORKERS = True     # Reuse data loading processes between epochs
