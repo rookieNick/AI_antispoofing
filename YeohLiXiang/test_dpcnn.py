@@ -14,9 +14,10 @@ import numpy as np
 from datetime import datetime
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, roc_curve, auc
 from model_dpcnn import create_dpcnn_model  # DPCNN models
-from plot_utils import (MetricsLogger, create_results_folder, get_next_index, plot_confusion_matrix, 
-                       save_metrics_summary, plot_roc_curve, plot_comprehensive_dashboard, 
-                       plot_vit_performance_analysis, plot_mse_rmse_dashboard, calculate_eer_hter)
+from plot_utils import (MetricsLogger, create_results_folder, get_next_index, plot_confusion_matrix,
+                       save_metrics_summary, plot_roc_curve, plot_comprehensive_dashboard,
+                       plot_performance_analysis, plot_mse_rmse_dashboard, calculate_eer_hter,
+                       plot_calibration_curve, plot_precision_recall_curve, plot_eer_hter_analysis) # Added new plot imports
 
 # ======================== CONFIGURATION VARIABLES ========================
 
@@ -27,7 +28,7 @@ MODEL_TYPE = 'standard'       # 'standard' or 'lightweight' - must match trainin
 SAMPLE_SIZE = -1              # Number of samples to test (-1 means full dataset)
 
 # Model Configuration
-MODEL_FILENAME = f'dpcnn.pth'
+MODEL_FILENAME = f'dpcnn2.pth'
 
 # Dataset Configuration
 CLASS_NAMES = ['live', 'spoof']  # Class names for confusion matrix
@@ -92,7 +93,7 @@ def test_dpcnn_model():
         test_dataset,
         batch_size=BATCH_SIZE,
         shuffle=False,  # Don't shuffle for consistent results
-        num_workers=4,
+        num_workers=10,
         pin_memory=True
     )
     
@@ -207,6 +208,9 @@ def test_dpcnn_model():
     # Calculate confusion matrix
     cm = confusion_matrix(all_targets, all_predictions)
     
+    # Initialize confusion matrix values
+    tp = tn = fp = fn = 0
+    
     # Calculate specificity (for binary classification)
     if num_classes == 2:
         tn, fp, fn, tp = cm.ravel()
@@ -255,6 +259,7 @@ def test_dpcnn_model():
     
     # Store results for saving
     results = {
+        'model_name': f'{MODEL_TYPE.upper()} DPCNN',
         'accuracy': test_accuracy,
         'loss': test_loss,
         'precision': test_precision,
@@ -262,10 +267,10 @@ def test_dpcnn_model():
         'f1_score': test_f1,
         'specificity': specificity,
         'confusion_matrix': {
-            'tp': int(tp) if num_classes == 2 else 0,
-            'tn': int(tn) if num_classes == 2 else 0,
-            'fp': int(fp) if num_classes == 2 else 0,
-            'fn': int(fn) if num_classes == 2 else 0
+            'tp': int(tp),
+            'tn': int(tn),
+            'fp': int(fp),
+            'fn': int(fn)
         },
         'y_true': all_targets,
         'y_scores': y_scores_binary,
@@ -303,6 +308,13 @@ def test_dpcnn_model():
         roc_path = os.path.join(result_folder, "roc_curve.png")
         roc_auc = plot_roc_curve(results['y_true'], results['y_scores'], roc_path)
         print(f"✅ ROC curve saved: {roc_path} (AUC: {roc_auc:.4f})")
+        
+        # Add new plots
+        calibration_path = os.path.join(result_folder, "calibration_curve.png")
+        plot_calibration_curve(results['y_true'], results['y_scores'], calibration_path, results['model_name'])
+        
+        pr_curve_path = os.path.join(result_folder, "precision_recall_curve.png")
+        plot_precision_recall_curve(results['y_true'], results['y_scores'], pr_curve_path, results['model_name'])
     
     summary_path = os.path.join(result_folder, "summary.txt")
     save_metrics_summary(results, summary_path)
@@ -315,18 +327,23 @@ def test_dpcnn_model():
     plot_comprehensive_dashboard(results, save_prefix)
     print(f"✅ EfficientNet+Meta Learning style dashboard saved")
     
-    plot_vit_performance_analysis(results, save_prefix)
-    print(f"✅ ViT-style performance analysis saved")
+    plot_performance_analysis(results, save_prefix)
+    print(f"✅ CNN-style performance analysis saved")
     
     plot_mse_rmse_dashboard(results, save_prefix)
     print(f"✅ MSE & RMSE analysis dashboard saved")
+    
+    # Add EER/HTER analysis
+    eer_hter_path = os.path.join(result_folder, "eer_hter_analysis.png")
+    plot_eer_hter_analysis(eer, hter, eer_hter_path, results['model_name'])
     
     print(f"\n🎯 All comprehensive test results saved in folder: {result_folder}")
     print(f"📊 Generated {len(os.listdir(result_folder))} analysis files including:")
     print(f"   - Traditional confusion matrix and ROC curves")
     print(f"   - EfficientNet+Meta Learning comprehensive dashboard")
-    print(f"   - ViT-style performance analysis with MSE/RMSE focus")
+    print(f"   - Performance analysis with MSE/RMSE focus")
     print(f"   - Detailed MSE & RMSE analysis dashboard")
+    print(f"   - EER/HTER quality analysis with gauges")
     print(f"   - EER: {eer:.2f}%, HTER: {hter:.2f}%")
     print("=" * 80)
 

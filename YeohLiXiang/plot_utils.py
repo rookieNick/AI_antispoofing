@@ -3,13 +3,13 @@ import seaborn as sns
 import numpy as np
 import os
 from datetime import datetime
-from sklearn.metrics import roc_curve, auc, mean_squared_error
+from sklearn.metrics import roc_curve, auc, mean_squared_error, precision_recall_curve, average_precision_score # Added for PR curve
 import matplotlib.patches as patches
 from matplotlib.gridspec import GridSpec
 from scipy import stats
 
 def create_results_folder(folder_type=None):
-    """Create results folder for patch_cnn, vgg16, or dpcnn if it doesn't exist"""
+    """Create results folder for patch_cnn, vgg16, dpcnn, or cnn if it doesn't exist"""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     if folder_type == 'patch_cnn':
         results_dir = os.path.join(script_dir, "results_patch_cnn")
@@ -17,6 +17,8 @@ def create_results_folder(folder_type=None):
         results_dir = os.path.join(script_dir, "results_vgg16")
     elif folder_type == 'dpcnn':
         results_dir = os.path.join(script_dir, "results_dpcnn")
+    elif folder_type == 'cnn':
+        results_dir = os.path.join(script_dir, "results_cnn")
     else:
         results_dir = os.path.join(script_dir, "results")
     if not os.path.exists(results_dir):
@@ -614,9 +616,9 @@ def plot_comprehensive_dashboard(results, save_path_prefix):
     
     print(f"✅ Comprehensive dashboard plots saved as separate images with prefix: {save_path_prefix}")
 
-def plot_vit_performance_analysis(results, save_path_prefix):
+def plot_performance_analysis(results, save_path_prefix):
     """
-    Create ViT-style performance analysis with MSE/RMSE focus
+    Create performance analysis with MSE/RMSE focus
     Now saves each plot as separate image files
     """
     model_name = results.get('model_name', 'Model')
@@ -650,7 +652,7 @@ def plot_vit_performance_analysis(results, save_path_prefix):
                 f'{value:.4f}' if value < 1 else f'{value:.2f}', ha='center', va='bottom', fontweight='bold')
     
     plt.tight_layout()
-    plt.savefig(f"{save_path_prefix}_vit_performance_metrics.png", dpi=300, bbox_inches='tight')
+    plt.savefig(f"{save_path_prefix}_performance_metrics.png", dpi=300, bbox_inches='tight')
     plt.close()
     
     # 2. MSE vs RMSE Comparison (Pie Chart)
@@ -666,7 +668,7 @@ def plot_vit_performance_analysis(results, save_path_prefix):
         plt.title(f'{model_name}: MSE vs RMSE Comparison', fontweight='bold', fontsize=14)
     
     plt.tight_layout()
-    plt.savefig(f"{save_path_prefix}_vit_mse_rmse_pie.png", dpi=300, bbox_inches='tight')
+    plt.savefig(f"{save_path_prefix}_mse_rmse_pie.png", dpi=300, bbox_inches='tight')
     plt.close()
     
     # 3. RMSE Quality Gauge
@@ -889,6 +891,34 @@ def plot_mse_rmse_dashboard(results, save_path_prefix):
     
     print(f"✅ MSE/RMSE dashboard plots saved as separate images with prefix: {save_path_prefix}")
 
+def plot_calibration_curve(y_true, y_scores, save_path, model_name="Model", n_bins=10):
+    """
+    Plot calibration curve (reliability diagram) to assess predicted probability accuracy.
+    """
+    from sklearn.calibration import calibration_curve
+    
+    plt.figure(figsize=(10, 8))
+    
+    # Calculate calibration curve
+    fraction_of_positives, mean_predicted_value = calibration_curve(y_true, y_scores, n_bins=n_bins, strategy='uniform')
+    
+    # Plot perfect calibration line
+    plt.plot([0, 1], [0, 1], "k:", label="Perfectly calibrated")
+    
+    # Plot model's calibration curve
+    plt.plot(mean_predicted_value, fraction_of_positives, "s-", label=model_name)
+    
+    plt.title(f'{model_name}: Calibration Plot (Reliability Diagram)', fontsize=16, fontweight='bold')
+    plt.xlabel('Mean Predicted Probability', fontsize=12, fontweight='bold')
+    plt.ylabel('Fraction of Positives', fontsize=12, fontweight='bold')
+    plt.legend(loc="lower right", fontsize=12)
+    plt.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"✅ Calibration plot saved: {save_path}")
+
 def calculate_eer_hter(y_true, y_scores):
     """
     Calculate Equal Error Rate (EER) and Half Total Error Rate (HTER)
@@ -923,6 +953,28 @@ def calculate_eer_hter(y_true, y_scores):
     
     return eer * 100, hter * 100  # Return as percentages
 
+def plot_precision_recall_curve(y_true, y_scores, save_path, model_name="Model"):
+    """
+    Plot Precision-Recall curve.
+    """
+    precision, recall, _ = precision_recall_curve(y_true, y_scores)
+    avg_precision = average_precision_score(y_true, y_scores)
+    
+    plt.figure(figsize=(10, 8))
+    plt.plot(recall, precision, color='blue', lw=2, label=f'Precision-Recall curve (AP = {avg_precision:.4f})')
+    plt.xlabel('Recall', fontsize=12, fontweight='bold')
+    plt.ylabel('Precision', fontsize=12, fontweight='bold')
+    plt.title(f'{model_name}: Precision-Recall Curve', fontsize=16, fontweight='bold')
+    plt.legend(loc="lower left", fontsize=12)
+    plt.grid(True, alpha=0.3)
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"✅ Precision-Recall curve saved: {save_path}")
+
 def enhanced_save_all_plots(self, test_results=None, folder_type=None):
     """Enhanced version that creates all comprehensive plots"""
     results_dir = create_results_folder(folder_type)
@@ -939,8 +991,8 @@ def enhanced_save_all_plots(self, test_results=None, folder_type=None):
     
     # Save original training metrics with model name
     metrics_path = os.path.join(result_folder, "training_metrics.png")
-    plot_training_metrics_with_model_name(self.train_losses, self.train_accs, self.val_losses, 
-                        self.val_accs, self.val_precisions, self.val_recalls, 
+    plot_training_metrics_with_model_name(self.train_losses, self.train_accs, self.val_losses,
+                        self.val_accs, self.val_precisions, self.val_recalls,
                         metrics_path, model_name)
     
     loss_curve_path = os.path.join(result_folder, "loss_curve.png")
@@ -978,14 +1030,21 @@ def enhanced_save_all_plots(self, test_results=None, folder_type=None):
         if 'y_true' in test_results and 'y_scores' in test_results:
             roc_path = os.path.join(test_folder, "roc_curve.png")
             roc_auc = plot_roc_curve(test_results['y_true'], test_results['y_scores'], roc_path)
-        
+            
+            # New plots
+            calibration_path = os.path.join(test_folder, "calibration_curve.png")
+            plot_calibration_curve(test_results['y_true'], test_results['y_scores'], calibration_path, model_name)
+            
+            pr_curve_path = os.path.join(test_folder, "precision_recall_curve.png")
+            plot_precision_recall_curve(test_results['y_true'], test_results['y_scores'], pr_curve_path, model_name)
+
         summary_path = os.path.join(test_folder, "summary.txt")
         save_metrics_summary(test_results, summary_path)
         
         # Save comprehensive dashboards
         save_prefix = os.path.join(test_folder, "advanced")
         plot_comprehensive_dashboard(test_results, save_prefix)
-        plot_vit_performance_analysis(test_results, save_prefix)
+        plot_performance_analysis(test_results, save_prefix)
         plot_mse_rmse_dashboard(test_results, save_prefix)
         
         print(f"✅ All comprehensive analysis plots saved in: {test_folder}")
@@ -993,5 +1052,116 @@ def enhanced_save_all_plots(self, test_results=None, folder_type=None):
     
     print(f"✅ Training plots saved in: {result_folder}")
     return base_name, result_folder
+
+def plot_eer_hter_analysis(eer, hter, save_path, model_name="Model"):
+    """
+    Create a comprehensive EER and HTER analysis plot with bar chart and gauge visualization.
+    """
+    fig = plt.figure(figsize=(15, 10))
+    
+    # Create subplots
+    gs = GridSpec(2, 2, figure=fig)
+    ax1 = fig.add_subplot(gs[0, 0])  # Bar chart
+    ax2 = fig.add_subplot(gs[0, 1])  # EER Gauge
+    ax3 = fig.add_subplot(gs[1, :])  # HTER Gauge
+    
+    # 1. Bar Chart for EER and HTER comparison
+    metrics = ['EER', 'HTER']
+    values = [eer, hter]
+    colors = ['#FF6B6B', '#4ECDC4']
+    
+    bars = ax1.bar(metrics, values, color=colors, alpha=0.8, width=0.6)
+    ax1.set_title(f'{model_name}: EER vs HTER Comparison', fontweight='bold', fontsize=14)
+    ax1.set_ylabel('Error Rate (%)', fontweight='bold')
+    ax1.set_ylim(0, max(values) * 1.2 + 5)
+    ax1.grid(True, alpha=0.3)
+    
+    # Add value labels on bars
+    for bar, value in zip(bars, values):
+        ax1.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.5,
+                f'{value:.2f}%', ha='center', va='bottom', fontweight='bold', fontsize=12)
+    
+    # 2. EER Gauge Chart
+    ax2.set_title(f'{model_name}: EER Quality Gauge', fontweight='bold', fontsize=14)
+    
+    # Create gauge background
+    theta = np.linspace(np.pi, 0, 100)
+    r = 1
+    x_gauge = r * np.cos(theta)
+    y_gauge = r * np.sin(theta)
+    ax2.plot(x_gauge, y_gauge, 'k-', linewidth=3)
+    
+    # Determine EER quality zones
+    if eer <= 5:
+        quality = "EXCELLENT"
+        color = '#2ECC71'
+        angle = np.pi * (1 - eer/20)  # Map 0-5% to 180-90 degrees
+    elif eer <= 10:
+        quality = "GOOD"
+        color = '#F1C40F'
+        angle = np.pi * (1 - eer/20)
+    elif eer <= 15:
+        quality = "FAIR"
+        color = '#E67E22'
+        angle = np.pi * (1 - eer/20)
+    else:
+        quality = "POOR"
+        color = '#E74C3C'
+        angle = np.pi * (1 - eer/20)
+    
+    # Draw gauge needle
+    needle_x = [0, 0.8 * np.cos(angle)]
+    needle_y = [0, 0.8 * np.sin(angle)]
+    ax2.plot(needle_x, needle_y, color=color, linewidth=4)
+    
+    # Add quality labels
+    ax2.text(0, -0.3, quality, ha='center', va='center', fontweight='bold', fontsize=12, color=color)
+    ax2.text(0, -0.6, f'EER: {eer:.2f}%', ha='center', va='center', fontweight='bold', fontsize=10)
+    ax2.set_xlim(-1.2, 1.2)
+    ax2.set_ylim(-1.2, 0.2)
+    ax2.set_aspect('equal')
+    ax2.axis('off')
+    
+    # 3. HTER Gauge Chart
+    ax3.set_title(f'{model_name}: HTER Quality Gauge', fontweight='bold', fontsize=14)
+    
+    # Create gauge background
+    ax3.plot(x_gauge, y_gauge, 'k-', linewidth=3)
+    
+    # Determine HTER quality zones
+    if hter <= 5:
+        quality_hter = "EXCELLENT"
+        color_hter = '#2ECC71'
+        angle_hter = np.pi * (1 - hter/20)
+    elif hter <= 10:
+        quality_hter = "GOOD"
+        color_hter = '#F1C40F'
+        angle_hter = np.pi * (1 - hter/20)
+    elif hter <= 15:
+        quality_hter = "FAIR"
+        color_hter = '#E67E22'
+        angle_hter = np.pi * (1 - hter/20)
+    else:
+        quality_hter = "POOR"
+        color_hter = '#E74C3C'
+        angle_hter = np.pi * (1 - hter/20)
+    
+    # Draw gauge needle
+    needle_x_hter = [0, 0.8 * np.cos(angle_hter)]
+    needle_y_hter = [0, 0.8 * np.sin(angle_hter)]
+    ax3.plot(needle_x_hter, needle_y_hter, color=color_hter, linewidth=4)
+    
+    # Add quality labels
+    ax3.text(0, -0.3, quality_hter, ha='center', va='center', fontweight='bold', fontsize=12, color=color_hter)
+    ax3.text(0, -0.6, f'HTER: {hter:.2f}%', ha='center', va='center', fontweight='bold', fontsize=10)
+    ax3.set_xlim(-1.2, 1.2)
+    ax3.set_ylim(-1.2, 0.2)
+    ax3.set_aspect('equal')
+    ax3.axis('off')
+    
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"✅ EER/HTER analysis plot saved: {save_path}")
 
 # Add enhanced method to MetricsLogger class

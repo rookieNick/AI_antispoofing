@@ -4,10 +4,11 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import os
 import numpy as np
-from YeohLiXiang.model_cnn import OptimizedCNN
-from plot_utils import (MetricsLogger, create_results_folder, get_next_index, plot_confusion_matrix, 
-                       save_metrics_summary, plot_roc_curve, plot_comprehensive_dashboard, 
-                       plot_vit_performance_analysis, plot_mse_rmse_dashboard, calculate_eer_hter)
+from model_cnn import OptimizedCNN
+from plot_utils import (MetricsLogger, create_results_folder, get_next_index, plot_confusion_matrix,
+                       save_metrics_summary, plot_roc_curve, plot_comprehensive_dashboard,
+                       plot_performance_analysis, plot_mse_rmse_dashboard, calculate_eer_hter,
+                       plot_calibration_curve, plot_precision_recall_curve, plot_eer_hter_analysis) # Added new plot imports
 from datetime import datetime
 import matplotlib.pyplot as plt
 
@@ -18,11 +19,11 @@ IMAGE_SIZE = (112, 112)       # Input image size (height, width)
 SAMPLE_LIMIT = -1             # Limit test dataset to this many samples; set to -1 to use all samples
 
 # Data Loading
-NUM_WORKERS = 6               # Number of data loading workers
+NUM_WORKERS = 10               # Number of data loading workers
 PIN_MEMORY = True             # Pin memory for faster GPU transfer
 
 # Model Loading
-MODEL_FILENAME = 'cnn_pytorch.pth'
+MODEL_FILENAME = 'cnn_pytorch1.pth'
 
 # Progress Reporting
 PROGRESS_REPORT_INTERVAL = 10 # Report progress every N batches
@@ -256,6 +257,13 @@ def test_model(model_path=None):
     roc_auc = plot_roc_curve(results['y_true'], results['y_scores'], roc_path)
     print(f"✅ ROC curve saved: {roc_path} (AUC: {roc_auc:.4f})")
     
+    # Add new plots
+    calibration_path = os.path.join(result_folder, "calibration_curve.png")
+    plot_calibration_curve(results['y_true'], results['y_scores'], calibration_path, results['model_name'])
+    
+    pr_curve_path = os.path.join(result_folder, "precision_recall_curve.png")
+    plot_precision_recall_curve(results['y_true'], results['y_scores'], pr_curve_path, results['model_name'])
+
     summary_path = os.path.join(result_folder, "summary.txt")
     save_metrics_summary(results, summary_path)
     print(f"✅ Test summary saved: {summary_path}")
@@ -267,18 +275,23 @@ def test_model(model_path=None):
     plot_comprehensive_dashboard(results, save_prefix)
     print(f"✅ EfficientNet+Meta Learning style dashboard saved")
     
-    plot_vit_performance_analysis(results, save_prefix)
+    plot_performance_analysis(results, save_prefix)
     print(f"✅ ViT-style performance analysis saved")
     
     plot_mse_rmse_dashboard(results, save_prefix)
     print(f"✅ MSE & RMSE analysis dashboard saved")
     
+    # Add EER/HTER analysis
+    eer_hter_path = os.path.join(result_folder, "eer_hter_analysis.png")
+    plot_eer_hter_analysis(eer, hter, eer_hter_path, results['model_name'])
+    
     print(f"\n🎯 All comprehensive test results saved in folder: {result_folder}")
     print(f"📊 Generated {len(os.listdir(result_folder))} analysis files including:")
     print(f"   - Traditional confusion matrix and ROC curves")
     print(f"   - EfficientNet+Meta Learning comprehensive dashboard")
-    print(f"   - ViT-style performance analysis with MSE/RMSE focus")
+    print(f"   - Performance analysis with MSE/RMSE focus")
     print(f"   - Detailed MSE & RMSE analysis dashboard")
+    print(f"   - EER/HTER quality analysis with gauges")
     print(f"   - EER: {eer:.2f}%, HTER: {hter:.2f}%")
     
     return results

@@ -123,5 +123,9 @@ Graphs/Charts for Testing:
 - RMSE: Current vs Perfect Model
 - Error Severity Assessment
 - MSE & RMSE Analysis Report
+- ROC Curves with AUC
+- Calibration Curve
+- Precision-Recall Curve
+- EER/HTER Analysis
 
 Note: Some charts (e.g., error distribution, residual analysis) may be used for both training and testing depending on context. Most confusion matrices, F1 scores, and summary tables are for test/validation results.

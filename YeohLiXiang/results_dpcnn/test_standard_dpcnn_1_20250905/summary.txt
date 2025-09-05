@@ -1,0 +1,31 @@
+==================================================
+         MODEL EVALUATION RESULTS
+==================================================
+Date: 2025-09-05 14:18:25
+Model: OptimizedCNN
+
+PERFORMANCE METRICS:
+------------------------------
+Test Accuracy:    95.86%
+Test Loss:        0.1758
+Test Precision:   0.9578
+Test Recall:      0.9586
+Test F1-Score:    0.9579
+Test Specificity: 0.8267
+
+CONFUSION MATRIX:
+------------------------------
+True Positives:   54690
+True Negatives:   8374
+False Positives:  1755
+False Negatives:  966
+Total Samples:    65785
+
+CLASS-WISE PERFORMANCE:
+------------------------------
+Live Detection (Class 0):
+  - Sensitivity: 0.8267
+  - Specificity: 0.8267
+Spoof Detection (Class 1):
+  - Sensitivity: 0.9586
+  - Precision:   0.9578

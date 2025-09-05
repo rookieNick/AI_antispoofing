@@ -732,28 +732,11 @@ def train_model():
     print(f"Best validation accuracy: {best_val_acc:.2f}%")
     print(f"Best model saved to: {best_model_path}")
     
-    # Prepare test_results dictionary for comprehensive plotting
-    test_results = {
-        'model_name': 'CNN',
-        'accuracy': best_val_acc,
-        'loss': best_val_loss,
-        'precision': val_precision,
-        'recall': val_recall,
-        'f1_score': val_f1,
-        'confusion_matrix': {'tp': tp, 'tn': tn, 'fp': fp, 'fn': fn},
-        'y_true': all_val_targets,
-        'y_scores': all_val_probs,
-        'mse': val_mse,
-        'rmse': val_rmse,
-        'correct_predictions': correct_predictions
-    }
-
     # Save comprehensive training plots and analysis
     print("\n📊 Saving training results...")
-    base_name, result_folder, test_base_name, test_folder = metrics_logger.save_all_plots(test_results=test_results, folder_type='cnn')
+    base_name, result_folder = metrics_logger.save_all_plots(folder_type='cnn') # Removed test_results
     print(f"Training results saved in folder: {result_folder}")
-    print(f"Comprehensive test results saved in folder: {test_folder}")
-    print("\n✅ All done! Check the results_cnn folder for training plots and comprehensive test metrics.")
+    print("\n✅ All done! Check the results_cnn folder for training plots.")
 
 if __name__ == '__main__':
     # =========================

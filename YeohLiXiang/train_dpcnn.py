@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import os
 import time
+import numpy as np # Added for comprehensive metrics
 from collections import Counter
 from sklearn.metrics import confusion_matrix, f1_score, mean_squared_error # Added for comprehensive metrics
 from model_dpcnn import create_dpcnn_model  # DPCNN model
@@ -448,28 +449,11 @@ def train_dpcnn_model():
     print(f"Best validation loss: {best_val_loss:.4f}")
     print(f"Model saved to: {os.path.join(script_dir, 'model', MODEL_FILENAME)}")
     
-    # Prepare test_results dictionary for comprehensive plotting
-    test_results = {
-        'model_name': MODEL_TYPE.upper() + ' DPCNN',
-        'accuracy': best_val_acc,
-        'loss': best_val_loss,
-        'precision': val_precision, # Using last epoch's validation precision
-        'recall': val_recall,       # Using last epoch's validation recall
-        'f1_score': val_f1,         # Using last epoch's validation F1
-        'confusion_matrix': {'tp': tp, 'tn': tn, 'fp': fp, 'fn': fn},
-        'y_true': all_val_targets,
-        'y_scores': all_val_probs,
-        'mse': val_mse,
-        'rmse': val_rmse,
-        'correct_predictions': correct_predictions
-    }
-
     # Save training plots
     print("\\n📊 Saving training results...")
-    base_name, result_folder, test_base_name, test_folder = metrics_logger.save_all_plots(test_results=test_results, folder_type='dpcnn')
+    base_name, result_folder = metrics_logger.save_all_plots(folder_type='dpcnn') # Removed test_results
     print(f"Training results saved in folder: {result_folder}")
-    print(f"Comprehensive test results saved in folder: {test_folder}")
-    print("\n✅ All done! Check the results_dpcnn folder for training plots and comprehensive test metrics.")
+    print("\n✅ All done! Check the results_dpcnn folder for training plots.")
 
 if __name__ == "__main__":
     try:
