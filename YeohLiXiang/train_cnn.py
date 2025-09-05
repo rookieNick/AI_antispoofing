@@ -26,6 +26,7 @@ import os
 import time
 import numpy as np
 from collections import Counter
+from sklearn.metrics import confusion_matrix, f1_score, mean_squared_error # Added for comprehensive metrics
 from YeohLiXiang.model_cnn import OptimizedCNN  # Custom CNN architecture
 from plot_utils import MetricsLogger  # Custom plotting utilities
 import random
@@ -39,15 +40,15 @@ BATCH_SIZE = 64               # Smaller batches provide better gradient estimate
                               # and improved generalization, especially with limited data
 IMAGE_SIZE = (128, 128)       # Higher resolution captures finer facial details
                               # crucial for anti-spoofing (texture, pores, etc.)
-EPOCHS = 100                  # More training epochs for thorough convergence
+EPOCHS = 30                  # More training epochs for thorough convergence
 LEARNING_RATE = 0.0005        # Lower learning rate for careful fine-tuning
                               # and stable convergence to optimal weights
 WEIGHT_DECAY = 0.005          # Reduced weight decay to allow model flexibility
                               # while still preventing overfitting
-SAMPLE_LIMIT = -1             # Use complete dataset for maximum training data
+SAMPLE_LIMIT = 5000             # Use complete dataset for maximum training data
 
 # Advanced Training Techniques
-PATIENCE = 15                 # Increased patience allows more thorough training
+PATIENCE = 5                 # Increased patience allows more thorough training
                               # before early stopping kicks in
 LABEL_SMOOTHING = 0.15        # Higher label smoothing prevents overconfident
                               # predictions and improves generalization
@@ -638,8 +639,9 @@ def train_model():
         val_loss = 0.0
         val_correct = 0
         val_total = 0
-        # Initialize confusion matrix components for detailed analysis
-        val_tp = val_tn = val_fp = val_fn = 0
+        all_val_preds = []
+        all_val_targets = []
+        all_val_probs = []
         
         # Disable gradient computation for validation (saves memory and computation)
         with torch.no_grad():
@@ -657,21 +659,16 @@ def train_model():
                 
                 # Accumulate validation statistics
                 val_loss += loss.item()
+                
+                probs = torch.softmax(outputs, dim=1)[:, 1]
+                all_val_probs.extend(probs.cpu().numpy())
+
                 _, predicted = outputs.max(1)
                 val_total += targets.size(0)
                 val_correct += predicted.eq(targets).sum().item()
                 
-                # Calculate confusion matrix components for precision/recall metrics
-                # Assuming binary classification: 0=live, 1=spoof
-                for t, p in zip(targets.view(-1), predicted.view(-1)):
-                    if t.long() == 1 and p.long() == 1:
-                        val_tp += 1  # True Positive: correctly detected spoof
-                    elif t.long() == 1 and p.long() == 0:
-                        val_fn += 1  # False Negative: missed spoof attack
-                    elif t.long() == 0 and p.long() == 1:
-                        val_fp += 1  # False Positive: false spoof alarm
-                    else:
-                        val_tn += 1  # True Negative: correctly identified live face
+                all_val_preds.extend(predicted.cpu().numpy())
+                all_val_targets.extend(targets.cpu().numpy())
         
         # =========================
         # METRICS CALCULATION
@@ -683,9 +680,20 @@ def train_model():
         val_loss /= len(val_loader)
         
         # Calculate precision and recall for spoof detection
-        val_precision = val_tp / (val_tp + val_fp) if (val_tp + val_fp) > 0 else 0
-        val_recall = val_tp / (val_tp + val_fn) if (val_tp + val_fn) > 0 else 0
+        val_precision = precision_score(all_val_targets, all_val_preds, average='weighted', zero_division=0)
+        val_recall = recall_score(all_val_targets, all_val_preds, average='weighted', zero_division=0)
         
+        # Calculate additional metrics for comprehensive plotting
+        cm = confusion_matrix(all_val_targets, all_val_preds)
+        tn, fp, fn, tp = cm.ravel() if cm.size == 4 else (0, 0, 0, 0) # Handle cases where only one class is present
+        
+        val_f1 = f1_score(all_val_targets, all_val_preds, average='weighted', zero_division=0)
+        val_mse = mean_squared_error(all_val_targets, all_val_probs)
+        val_rmse = np.sqrt(val_mse)
+        
+        # Determine correct predictions for confidence distribution
+        correct_predictions = (np.array(all_val_preds) == np.array(all_val_targets)).tolist()
+
         # Update learning rate scheduler
         scheduler.step()
         current_lr = optimizer.param_groups[0]['lr']
@@ -724,11 +732,28 @@ def train_model():
     print(f"Best validation accuracy: {best_val_acc:.2f}%")
     print(f"Best model saved to: {best_model_path}")
     
+    # Prepare test_results dictionary for comprehensive plotting
+    test_results = {
+        'model_name': 'CNN',
+        'accuracy': best_val_acc,
+        'loss': best_val_loss,
+        'precision': val_precision,
+        'recall': val_recall,
+        'f1_score': val_f1,
+        'confusion_matrix': {'tp': tp, 'tn': tn, 'fp': fp, 'fn': fn},
+        'y_true': all_val_targets,
+        'y_scores': all_val_probs,
+        'mse': val_mse,
+        'rmse': val_rmse,
+        'correct_predictions': correct_predictions
+    }
+
     # Save comprehensive training plots and analysis
-    print("\nSaving training plots...")
-    base_name, result_folder = metrics_logger.save_all_plots()
+    print("\n📊 Saving training results...")
+    base_name, result_folder, test_base_name, test_folder = metrics_logger.save_all_plots(test_results=test_results, folder_type='cnn')
     print(f"Training results saved in folder: {result_folder}")
-    print(f"Result folder name: {base_name}")
+    print(f"Comprehensive test results saved in folder: {test_folder}")
+    print("\n✅ All done! Check the results_cnn folder for training plots and comprehensive test metrics.")
 
 if __name__ == '__main__':
     # =========================

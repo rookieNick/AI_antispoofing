@@ -3,8 +3,11 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 import os
+import numpy as np
 from YeohLiXiang.model_cnn import OptimizedCNN
-from plot_utils import MetricsLogger, create_results_folder, get_next_index, plot_confusion_matrix, save_metrics_summary, plot_roc_curve
+from plot_utils import (MetricsLogger, create_results_folder, get_next_index, plot_confusion_matrix, 
+                       save_metrics_summary, plot_roc_curve, plot_comprehensive_dashboard, 
+                       plot_vit_performance_analysis, plot_mse_rmse_dashboard, calculate_eer_hter)
 from datetime import datetime
 import matplotlib.pyplot as plt
 
@@ -200,7 +203,14 @@ def test_model(model_path=None):
     print(f"  - Sensitivity (Recall): {test_recall:.4f}")
     print(f"  - Precision: {test_precision:.4f}")
     
+    # Calculate EER and HTER
+    eer, hter = calculate_eer_hter(all_targets, all_y_scores)
+    
+    # Determine correct predictions for confidence distribution
+    correct_predictions = (np.array(all_predictions) == np.array(all_targets)).tolist()
+
     results = {
+        'model_name': 'CNN', # Added model name
         'accuracy': test_acc,
         'loss': test_loss,
         'precision': test_precision,
@@ -208,40 +218,68 @@ def test_model(model_path=None):
         'f1_score': test_f1,
         'specificity': test_specificity,
         'confusion_matrix': {
-            'tp': test_tp, 'tn': test_tn, 
+            'tp': test_tp, 'tn': test_tn,
             'fp': test_fp, 'fn': test_fn
         },
         'y_true': all_targets,
-        'y_scores': all_y_scores
+        'y_scores': all_y_scores,
+        'eer': eer,
+        'hter': hter,
+        'mse': np.mean((np.array(all_targets) - np.array(all_y_scores)) ** 2),
+        'rmse': np.sqrt(np.mean((np.array(all_targets) - np.array(all_y_scores)) ** 2)),
+        'correct_predictions': correct_predictions # Added correct predictions
     }
     
+    print(f"\nAdditional Metrics:")
+    print(f"  - EER (Equal Error Rate): {eer:.2f}%")
+    print(f"  - HTER (Half Total Error Rate): {hter:.2f}%")
+    print(f"  - MSE (Mean Squared Error): {results['mse']:.6f}")
+    print(f"  - RMSE (Root Mean Squared Error): {results['rmse']:.6f}")
+    
     # Save test results plots
-    print("\nSaving test results...")
-    results_dir = create_results_folder()
+    print("\nSaving comprehensive test results...")
+    results_dir = create_results_folder(folder_type='cnn') # Changed folder_type to 'cnn'
     index = get_next_index(results_dir, "test")
     date_str = datetime.now().strftime('%Y%m%d')
-    base_name = f"test_{index}_{date_str}"
+    base_name = f"test_cnn_{index}_{date_str}" # Changed base_name for clarity
     # Create a dedicated folder for this test result set
     result_folder = os.path.join(results_dir, f"{base_name}")
     if not os.path.exists(result_folder):
         os.makedirs(result_folder)
     
-    # Save confusion matrix
+    # Save original plots
     cm_path = os.path.join(result_folder, "confusion_matrix.png")
     plot_confusion_matrix(results['confusion_matrix'], CLASS_NAMES, cm_path)
-    print(f"Confusion matrix saved: {cm_path}")
+    print(f"✅ Confusion matrix saved: {cm_path}")
     
-    # Save ROC curve
     roc_path = os.path.join(result_folder, "roc_curve.png")
     roc_auc = plot_roc_curve(results['y_true'], results['y_scores'], roc_path)
-    print(f"ROC curve saved: {roc_path} (AUC: {roc_auc:.4f})")
+    print(f"✅ ROC curve saved: {roc_path} (AUC: {roc_auc:.4f})")
     
-    # Save metrics summary
     summary_path = os.path.join(result_folder, "summary.txt")
     save_metrics_summary(results, summary_path)
-    print(f"Test summary saved: {summary_path}")
+    print(f"✅ Test summary saved: {summary_path}")
     
-    print(f"All test results saved in folder: {result_folder}")
+    # Save comprehensive analysis dashboards
+    print("\n🔥 Generating comprehensive analysis dashboards...")
+    save_prefix = os.path.join(result_folder, "advanced")
+    
+    plot_comprehensive_dashboard(results, save_prefix)
+    print(f"✅ EfficientNet+Meta Learning style dashboard saved")
+    
+    plot_vit_performance_analysis(results, save_prefix)
+    print(f"✅ ViT-style performance analysis saved")
+    
+    plot_mse_rmse_dashboard(results, save_prefix)
+    print(f"✅ MSE & RMSE analysis dashboard saved")
+    
+    print(f"\n🎯 All comprehensive test results saved in folder: {result_folder}")
+    print(f"📊 Generated {len(os.listdir(result_folder))} analysis files including:")
+    print(f"   - Traditional confusion matrix and ROC curves")
+    print(f"   - EfficientNet+Meta Learning comprehensive dashboard")
+    print(f"   - ViT-style performance analysis with MSE/RMSE focus")
+    print(f"   - Detailed MSE & RMSE analysis dashboard")
+    print(f"   - EER: {eer:.2f}%, HTER: {hter:.2f}%")
     
     return results
 

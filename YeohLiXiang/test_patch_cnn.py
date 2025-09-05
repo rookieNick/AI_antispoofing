@@ -14,7 +14,9 @@ import numpy as np
 from datetime import datetime
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix, roc_curve, auc
 from model_patch_cnn import create_patch_cnn  # Patch-based CNN models
-from plot_utils import MetricsLogger, create_results_folder, get_next_index, plot_confusion_matrix, save_metrics_summary, plot_roc_curve
+from plot_utils import (MetricsLogger, create_results_folder, get_next_index, plot_confusion_matrix, 
+                       save_metrics_summary, plot_roc_curve, plot_comprehensive_dashboard, 
+                       plot_vit_performance_analysis, plot_mse_rmse_dashboard, calculate_eer_hter)
 
 # ======================== CONFIGURATION VARIABLES ========================
 
@@ -251,8 +253,16 @@ def test_patch_model():
     print(f"\\nConfusion Matrix:")
     print(cm)
     
+    # Calculate EER and HTER
+    y_scores_binary = all_probabilities[:, 1] if num_classes == 2 else all_probabilities[:, 0]
+    eer, hter = calculate_eer_hter(all_targets, y_scores_binary)
+    
+    # Determine correct predictions for confidence distribution
+    correct_predictions = (np.array(all_predictions) == np.array(all_targets)).tolist()
+
     # Store results for saving
     results = {
+        'model_name': MODEL_TYPE.upper() + ' Patch CNN', # Added model name
         'accuracy': test_accuracy,
         'loss': test_loss, # Add test_loss to results
         'precision': test_precision,
@@ -266,11 +276,22 @@ def test_patch_model():
             'fn': int(fn) if num_classes == 2 else 0
         },
         'y_true': all_targets,
-        'y_scores': all_probabilities[:, 1] if num_classes == 2 else all_probabilities[:, 0]
+        'y_scores': y_scores_binary,
+        'eer': eer,
+        'hter': hter,
+        'mse': np.mean((np.array(all_targets) - np.array(y_scores_binary)) ** 2),
+        'rmse': np.sqrt(np.mean((np.array(all_targets) - np.array(y_scores_binary)) ** 2)),
+        'correct_predictions': correct_predictions # Added correct predictions
     }
     
+    print(f"\nAdditional Metrics:")
+    print(f"  - EER (Equal Error Rate): {eer:.2f}%")
+    print(f"  - HTER (Half Total Error Rate): {hter:.2f}%")
+    print(f"  - MSE (Mean Squared Error): {results['mse']:.6f}")
+    print(f"  - RMSE (Root Mean Squared Error): {results['rmse']:.6f}")
+    
     # Save test results plots
-    print("\\nSaving test results...")
+    print("\\nSaving comprehensive test results...")
     results_dir = create_results_folder(folder_type='patch_cnn')
     index = get_next_index(results_dir, "test")
     date_str = datetime.now().strftime('%Y%m%d')
@@ -281,23 +302,41 @@ def test_patch_model():
     if not os.path.exists(result_folder):
         os.makedirs(result_folder)
     
-    # Save confusion matrix
+    # Save original plots
     cm_path = os.path.join(result_folder, "confusion_matrix.png")
     plot_confusion_matrix(results['confusion_matrix'], CLASS_NAMES, cm_path)
-    print(f"Confusion matrix saved: {cm_path}")
+    print(f"✅ Confusion matrix saved: {cm_path}")
     
     # Save ROC curve (for binary classification)
     if num_classes == 2:
         roc_path = os.path.join(result_folder, "roc_curve.png")
         roc_auc = plot_roc_curve(results['y_true'], results['y_scores'], roc_path)
-        print(f"ROC curve saved: {roc_path} (AUC: {roc_auc:.4f})")
+        print(f"✅ ROC curve saved: {roc_path} (AUC: {roc_auc:.4f})")
     
-    # Save metrics summary
     summary_path = os.path.join(result_folder, "summary.txt")
     save_metrics_summary(results, summary_path)
-    print(f"Metrics summary saved: {summary_path}")
+    print(f"✅ Metrics summary saved: {summary_path}")
     
-    print(f"\\n✅ All test results saved in: {result_folder}")
+    # Save comprehensive analysis dashboards
+    print("\\n🔥 Generating comprehensive analysis dashboards...")
+    save_prefix = os.path.join(result_folder, "advanced")
+    
+    plot_comprehensive_dashboard(results, save_prefix)
+    print(f"✅ EfficientNet+Meta Learning style dashboard saved")
+    
+    plot_vit_performance_analysis(results, save_prefix)
+    print(f"✅ ViT-style performance analysis saved")
+    
+    plot_mse_rmse_dashboard(results, save_prefix)
+    print(f"✅ MSE & RMSE analysis dashboard saved")
+    
+    print(f"\\n🎯 All comprehensive test results saved in folder: {result_folder}")
+    print(f"📊 Generated {len(os.listdir(result_folder))} analysis files including:")
+    print(f"   - Traditional confusion matrix and ROC curves")
+    print(f"   - EfficientNet+Meta Learning comprehensive dashboard")
+    print(f"   - ViT-style performance analysis with MSE/RMSE focus")
+    print(f"   - Detailed MSE & RMSE analysis dashboard")
+    print(f"   - EER: {eer:.2f}%, HTER: {hter:.2f}%")
     print("=" * 80)
 
 if __name__ == "__main__":

@@ -12,6 +12,7 @@ from torchvision import datasets, transforms
 import os
 import time
 from collections import Counter
+from sklearn.metrics import confusion_matrix, f1_score, mean_squared_error # Added for comprehensive metrics
 from model_dpcnn import create_dpcnn_model  # DPCNN model
 from plot_utils import MetricsLogger  # Custom plotting utilities
 
@@ -32,7 +33,7 @@ MODEL_TYPE = 'standard'       # 'standard' or 'lightweight'
 DROPOUT_RATE = 0.5            # Dropout rate for regularization
 
 # Early Stopping & Scheduling Parameters
-PATIENCE = 15                 # Patience for early stopping
+PATIENCE = 5                 # Patience for early stopping
 LABEL_SMOOTHING = 0.1         # Label smoothing factor
 GRADIENT_CLIP_NORM = 1.0      # Gradient clipping
 
@@ -360,6 +361,7 @@ def train_dpcnn_model():
         val_total = 0
         all_val_preds = []
         all_val_targets = []
+        all_val_probs = [] # Added to collect probabilities for ROC and other metrics
         
         with torch.no_grad():
             for data, targets in val_loader:
@@ -374,6 +376,12 @@ def train_dpcnn_model():
                     loss = criterion(outputs, targets)
                 
                 val_loss += loss.item()
+                
+                # Get probabilities for the positive class (assuming binary classification)
+                # For multi-class, this would need adjustment, e.g., softmax and then specific class prob
+                probs = torch.softmax(outputs, dim=1)[:, 1]
+                all_val_probs.extend(probs.cpu().numpy())
+
                 _, predicted = torch.max(outputs.data, 1)
                 val_total += targets.size(0)
                 val_correct += (predicted == targets).sum().item()
@@ -389,6 +397,17 @@ def train_dpcnn_model():
         val_precision = precision_score(all_val_targets, all_val_preds, average='weighted', zero_division=0)
         val_recall = recall_score(all_val_targets, all_val_preds, average='weighted', zero_division=0)
         
+        # Calculate additional metrics for comprehensive plotting
+        cm = confusion_matrix(all_val_targets, all_val_preds)
+        tn, fp, fn, tp = cm.ravel() if cm.size == 4 else (0, 0, 0, 0) # Handle cases where only one class is present
+        
+        val_f1 = f1_score(all_val_targets, all_val_preds, average='weighted', zero_division=0)
+        val_mse = mean_squared_error(all_val_targets, all_val_probs)
+        val_rmse = np.sqrt(val_mse)
+        
+        # Determine correct predictions for confidence distribution
+        correct_predictions = (np.array(all_val_preds) == np.array(all_val_targets)).tolist()
+
         # Log metrics
         metrics_logger.log_epoch(train_loss, train_acc, val_loss, val_acc, val_precision, val_recall)
         
@@ -429,11 +448,28 @@ def train_dpcnn_model():
     print(f"Best validation loss: {best_val_loss:.4f}")
     print(f"Model saved to: {os.path.join(script_dir, 'model', MODEL_FILENAME)}")
     
+    # Prepare test_results dictionary for comprehensive plotting
+    test_results = {
+        'model_name': MODEL_TYPE.upper() + ' DPCNN',
+        'accuracy': best_val_acc,
+        'loss': best_val_loss,
+        'precision': val_precision, # Using last epoch's validation precision
+        'recall': val_recall,       # Using last epoch's validation recall
+        'f1_score': val_f1,         # Using last epoch's validation F1
+        'confusion_matrix': {'tp': tp, 'tn': tn, 'fp': fp, 'fn': fn},
+        'y_true': all_val_targets,
+        'y_scores': all_val_probs,
+        'mse': val_mse,
+        'rmse': val_rmse,
+        'correct_predictions': correct_predictions
+    }
+
     # Save training plots
     print("\\n📊 Saving training results...")
-    base_name, result_folder = metrics_logger.save_all_plots(folder_type='dpcnn')
+    base_name, result_folder, test_base_name, test_folder = metrics_logger.save_all_plots(test_results=test_results, folder_type='dpcnn')
     print(f"Training results saved in folder: {result_folder}")
-    print("\n✅ All done! Check the results_dpcnn folder for training plots and metrics.")
+    print(f"Comprehensive test results saved in folder: {test_folder}")
+    print("\n✅ All done! Check the results_dpcnn folder for training plots and comprehensive test metrics.")
 
 if __name__ == "__main__":
     try:

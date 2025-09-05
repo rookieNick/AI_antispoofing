@@ -13,6 +13,7 @@ from torchvision import datasets, transforms
 import os
 import time
 from collections import Counter
+from sklearn.metrics import confusion_matrix, f1_score, mean_squared_error # Added for comprehensive metrics
 from model_patch_cnn import create_patch_cnn  # Patch-based CNN models
 from plot_utils import MetricsLogger  # Custom plotting utilities
 
@@ -21,7 +22,7 @@ from plot_utils import MetricsLogger  # Custom plotting utilities
 # Training Parameters
 BATCH_SIZE = 128              # Increased batch size for faster training
 IMAGE_SIZE = (112, 112)       # Input image dimensions
-EPOCHS = 50                   # Maximum number of training epochs
+EPOCHS = 30                   # Maximum number of training epochs
 LEARNING_RATE = 0.0001        # Lower learning rate for better convergence
 WEIGHT_DECAY = 0.01           # L2 regularization strength
 SAMPLE_LIMIT = 5000         # Limit training dataset size to first 10,000 images
@@ -32,7 +33,7 @@ NUM_PATCHES = 9               # Number of patches to extract (3x3 grid)
 MODEL_TYPE = 'patch'          # Use simpler 'patch' model instead of 'patch_depth'
 
 # Early Stopping & Scheduling Parameters
-PATIENCE = 15                 # Increased patience for patch models
+PATIENCE = 5                 # Increased patience for patch models
 LABEL_SMOOTHING = 0.0         # Disable label smoothing for initial runs
 GRADIENT_CLIP_NORM = 1.0      # Gradient clipping
 
@@ -290,6 +291,7 @@ def train_patch_model():
         val_total = 0
         all_val_preds = []
         all_val_targets = []
+        all_val_probs = []
         
         with torch.no_grad():
             for data, targets in val_loader:
@@ -304,6 +306,10 @@ def train_patch_model():
                     loss = criterion(outputs, targets)
                 
                 val_loss += loss.item()
+                
+                probs = torch.softmax(outputs, dim=1)[:, 1]
+                all_val_probs.extend(probs.cpu().numpy())
+
                 _, predicted = torch.max(outputs.data, 1)
                 val_total += targets.size(0)
                 val_correct += (predicted == targets).sum().item()
@@ -319,6 +325,17 @@ def train_patch_model():
         val_precision = precision_score(all_val_targets, all_val_preds, average='weighted', zero_division=0)
         val_recall = recall_score(all_val_targets, all_val_preds, average='weighted', zero_division=0)
         
+        # Calculate additional metrics for comprehensive plotting
+        cm = confusion_matrix(all_val_targets, all_val_preds)
+        tn, fp, fn, tp = cm.ravel() if cm.size == 4 else (0, 0, 0, 0) # Handle cases where only one class is present
+        
+        val_f1 = f1_score(all_val_targets, all_val_preds, average='weighted', zero_division=0)
+        val_mse = mean_squared_error(all_val_targets, all_val_probs)
+        val_rmse = np.sqrt(val_mse)
+        
+        # Determine correct predictions for confidence distribution
+        correct_predictions = (np.array(all_val_preds) == np.array(all_val_targets)).tolist()
+
         # Log metrics
         metrics_logger.log_epoch(train_loss, train_acc, val_loss, val_acc, val_precision, val_recall)
         
@@ -358,11 +375,28 @@ def train_patch_model():
     print(f"Best validation loss: {best_val_loss:.4f}")
     print(f"Model saved to: {os.path.join(script_dir, 'model', MODEL_FILENAME)}")
     
+    # Prepare test_results dictionary for comprehensive plotting
+    test_results = {
+        'model_name': MODEL_TYPE.upper() + ' Patch CNN',
+        'accuracy': best_val_acc,
+        'loss': best_val_loss,
+        'precision': val_precision,
+        'recall': val_recall,
+        'f1_score': val_f1,
+        'confusion_matrix': {'tp': tp, 'tn': tn, 'fp': fp, 'fn': fn},
+        'y_true': all_val_targets,
+        'y_scores': all_val_probs,
+        'mse': val_mse,
+        'rmse': val_rmse,
+        'correct_predictions': correct_predictions
+    }
+
     # Save training plots
     print("\\n📊 Saving training results...")
-    base_name, result_folder = metrics_logger.save_all_plots(folder_type='patch_cnn')
+    base_name, result_folder, test_base_name, test_folder = metrics_logger.save_all_plots(test_results=test_results, folder_type='patch_cnn')
     print(f"Training results saved in folder: {result_folder}")
-    print("\n✅ All done! Check the results_patch_cnn folder for training plots and metrics.")
+    print(f"Comprehensive test results saved in folder: {test_folder}")
+    print("\n✅ All done! Check the results_patch_cnn folder for training plots and comprehensive test metrics.")
 
 if __name__ == "__main__":
     try:
