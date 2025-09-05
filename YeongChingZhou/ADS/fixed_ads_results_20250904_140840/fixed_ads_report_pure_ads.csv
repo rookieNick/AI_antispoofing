@@ -1,0 +1,2 @@
+algorithm,mode,depth_method,backbone,batch_size,total_epochs,training_time_minutes,best_validation_accuracy,final_test_accuracy,final_test_auc,final_test_precision,final_test_recall,final_test_f1,total_parameters,data_leakage_fixed
+Fixed ADS (pure_ads),pure_ads,gradient,resnet18,128,5,17.57100344101588,0.8436749460371508,0.8436749460371508,0.5607848602887177,0.6193819966946555,0.5097851333468099,0.4829687268138899,13422058,True
