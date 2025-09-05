@@ -204,7 +204,7 @@ class ResNetAttentionGUI:
         
         # Default model path
         if model_path is None:
-            model_path = "GohWenKang/resnet/resnet_attention_models/best_resnet_attention_model.pth"
+            model_path = "resnet/resnet_attention_models/best_resnet_attention_model.pth"
         
         # Load model if path exists
         if os.path.exists(model_path):
@@ -749,7 +749,7 @@ def main():
     parser = argparse.ArgumentParser(description="ResNet+Attention Anti-Spoofing GUI")
     parser.add_argument("--model", "-m", type=str, 
                        help="Path to model file (.pth)",
-                       default="GohWenKang/resnet/resnet_attention_models/best_resnet_attention_model.pth")
+                       default="resnet/resnet_attention_models/best_resnet_attention_model.pth")
     
     args = parser.parse_args()
     
