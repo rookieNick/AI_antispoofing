@@ -2,6 +2,9 @@
 
 To Run the Test Script, please follow these steps:
 
+## Model Weights (If GohWenKang/VIT/vit_models/best_vit_model.pth not found)
+Download the required `.pth` files from [https://drive.google.com/file/d/1aZ4dkmbHn1Ns7cKJ7ND7JOK43B4CR_ln/view?usp=sharing] and place them in `GohWenKang/VIT/vit_models/`.
+
 ### 1. Deactivate Any Existing Virtual Environment
 
 If you have a virtual environment active, deactivate it first:
