@@ -1,0 +1,38 @@
+🎯 COMPREHENSIVE ANALYSIS REPORT - RTX4050_CDCN
+============================================================
+
+📊 CORE PERFORMANCE METRICS:
+• Accuracy: 0.9071 (90.71%)
+• Balanced Accuracy: 0.9071 (90.71%)
+• AUC Score: 0.9693
+• Precision: 0.9562
+• Recall: 0.8534
+• F1-Score: 0.9018
+• Matthews Correlation Coefficient: 0.8190
+
+🎯 SPECIALIZED ANTI-SPOOFING METRICS:
+• EER (Equal Error Rate): 0.0963 (9.63%)
+• HTER (Half Total Error Rate): 0.0963 (9.63%)
+• MSE (Mean Squared Error): 0.0800
+• RMSE (Root Mean Squared Error): 0.2829
+
+🔍 ERROR ANALYSIS:
+• False Positives (Live→Spoof): 313
+• False Negatives (Spoof→Live): 1173
+• Total Errors: 1486
+• Error Rate: 9.29%
+
+💡 CONFIDENCE ANALYSIS:
+• Mean Confidence: 0.7052
+• Std Confidence: 0.2354
+• High Confidence Predictions (>0.8): 7928/16000 (49.5%)
+• Low Confidence Predictions (<0.6): 3872/16000 (24.2%)
+
+🏆 PERFORMANCE ASSESSMENT:
+• Overall Quality: Good
+• Reliability Level: Very High
+• Deployment Ready: Yes
+
+📋 RECOMMENDATIONS:
+• ⚖️  Imbalanced precision/recall - consider threshold tuning
+• ✅ Model meets deployment criteria - ready for production testing

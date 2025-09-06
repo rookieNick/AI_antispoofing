@@ -1,0 +1,38 @@
+🎯 COMPREHENSIVE ANALYSIS REPORT - DeepPixBis
+============================================================
+
+📊 CORE PERFORMANCE METRICS:
+• Accuracy: 0.8381 (83.81%)
+• Balanced Accuracy: 0.8381 (83.81%)
+• AUC Score: 0.9637
+• Precision: 0.9329
+• Recall: 0.7286
+• F1-Score: 0.8182
+• Matthews Correlation Coefficient: 0.6930
+
+🎯 SPECIALIZED ANTI-SPOOFING METRICS:
+• EER (Equal Error Rate): 0.0869 (8.70%)
+• HTER (Half Total Error Rate): 0.0869 (8.70%)
+• MSE (Mean Squared Error): 0.1371
+• RMSE (Root Mean Squared Error): 0.3703
+
+🔍 ERROR ANALYSIS:
+• False Positives (Live→Spoof): 524
+• False Negatives (Spoof→Live): 2714
+• Total Errors: 3238
+• Error Rate: 16.19%
+
+💡 CONFIDENCE ANALYSIS:
+• Mean Confidence: 0.9288
+• Std Confidence: 0.1900
+• High Confidence Predictions (>0.8): 17789/20000 (88.9%)
+• Low Confidence Predictions (<0.6): 1515/20000 (7.6%)
+
+🏆 PERFORMANCE ASSESSMENT:
+• Overall Quality: Fair
+• Reliability Level: Very High
+• Deployment Ready: No
+
+📋 RECOMMENDATIONS:
+• ⚖️  Imbalanced precision/recall - consider threshold tuning
+• 🔧 Model needs improvement before deployment

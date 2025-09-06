@@ -1,0 +1,2 @@
+model,accuracy,auc,precision,recall,f1_score,training_time,epochs,best_epoch
+Fixed_ADS,0.9556,0.99542374,0.9770680628272251,0.9331,0.9545780051150895,2362.2452697753906,20,11

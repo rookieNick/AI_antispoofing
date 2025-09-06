@@ -1,0 +1,2 @@
+model,accuracy,auc,precision,recall,f1_score,training_time,epochs,best_epoch,avg_epoch_time
+RTX4050_CDCN,0.907125,0.969275421875,0.9561624649859944,0.853375,0.9018494055482167,2172.504327774048,20,18,108.6252163887024

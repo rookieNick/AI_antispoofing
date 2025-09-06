@@ -1,0 +1,2 @@
+model,best_accuracy,final_auc,final_precision,final_recall,final_f1,total_training_time,total_epochs,model_parameters
+DeepPixBis,0.8381,0.9636508199999999,0.9329065300896286,0.7286,0.818192026951151,2030.860672712326,20,12616874

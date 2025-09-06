@@ -1,0 +1,38 @@
+🎯 COMPREHENSIVE ANALYSIS REPORT - Fixed_ADS
+============================================================
+
+📊 CORE PERFORMANCE METRICS:
+• Accuracy: 0.9556 (95.56%)
+• Balanced Accuracy: 0.9556 (95.56%)
+• AUC Score: 0.9954
+• Precision: 0.9771
+• Recall: 0.9331
+• F1-Score: 0.9546
+• Matthews Correlation Coefficient: 0.9121
+
+🎯 SPECIALIZED ANTI-SPOOFING METRICS:
+• EER (Equal Error Rate): 0.0455 (4.55%)
+• HTER (Half Total Error Rate): 0.0455 (4.55%)
+• MSE (Mean Squared Error): 0.0359
+• RMSE (Root Mean Squared Error): 0.1895
+
+🔍 ERROR ANALYSIS:
+• False Positives (Live→Spoof): 219
+• False Negatives (Spoof→Live): 669
+• Total Errors: 888
+• Error Rate: 4.44%
+
+💡 CONFIDENCE ANALYSIS:
+• Mean Confidence: 0.9569
+• Std Confidence: 0.1481
+• High Confidence Predictions (>0.8): 18700/20000 (93.5%)
+• Low Confidence Predictions (<0.6): 816/20000 (4.1%)
+
+🏆 PERFORMANCE ASSESSMENT:
+• Overall Quality: Excellent
+• Reliability Level: Very High
+• Deployment Ready: Yes
+
+📋 RECOMMENDATIONS:
+• ⚠️  Very high accuracy detected - verify dataset for potential data leakage
+• ✅ Model meets deployment criteria - ready for production testing
