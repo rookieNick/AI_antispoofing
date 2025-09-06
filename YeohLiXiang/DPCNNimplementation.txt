@@ -1,0 +1,136 @@
+3.3.1.2 Implementation of Deep Pyramid Convolutional Neural Network (DPCNN)
+
+This document details the implementation of the Deep Pyramid Convolutional Neural Network (DPCNN) for face anti-spoofing, drawing insights from the provided `train_dpcnn.py` and `model_dpcnn.py` scripts. The DPCNN architecture is designed to capture multi-scale features through its pyramid structure, which is beneficial for robust anti-spoofing detection.
+
+3.3.1.2.1 Configuration and Hyperparameters
+
+The training process for the DPCNN model is configured with specific hyperparameters to ensure effective learning, stability, and generalization.
+
+*   **IMAGE_SIZE**: (112, 112). Input images are resized to 112x112 pixels. This resolution is chosen to balance the need for capturing sufficient facial details for anti-spoofing with computational efficiency.
+*   **BATCH_SIZE**: 64. A batch size of 64 is used, providing a good balance between stable gradient estimates and efficient memory usage. This size is generally effective for training deep learning models, especially when combined with techniques like mixed precision.
+*   **EPOCHS**: 100. The model is trained for a maximum of 100 epochs. This extended training period allows the model to converge thoroughly and learn complex patterns, while an early stopping mechanism prevents overfitting.
+*   **LEARNING_RATE**: 0.001. An initial learning rate of 0.001 is set for the optimizer. This rate is a common starting point for Adam optimizers and is adjusted during training by a learning rate scheduler to ensure stable convergence.
+*   **WEIGHT_DECAY**: 0.0001. L2 regularization is applied with a weight decay of 0.0001. This helps prevent overfitting by penalizing large weights, encouraging the model to learn more generalized features.
+*   **SAMPLE_LIMIT**: 5000. For faster experimentation and debugging, the training dataset size can be limited to the first 5000 images. This is a configurable parameter and can be set to 0 to use the full dataset.
+*   **MODEL_TYPE**: 'standard'. The script supports two DPCNN model types: 'standard' and 'lightweight'. The 'standard' model is the default, offering a deeper architecture for potentially higher accuracy.
+*   **DROPOUT_RATE**: 0.5. A dropout rate of 0.5 is applied in the classifier layers for regularization, reducing the risk of overfitting by randomly deactivating neurons during training.
+*   **PATIENCE**: 15. Early stopping patience is set to 15 epochs. If the validation accuracy does not improve for 15 consecutive epochs, training is halted to prevent overfitting and save computational resources.
+*   **LABEL_SMOOTHING**: 0.1. Label smoothing with a factor of 0.1 is used in the Cross Entropy Loss. This technique prevents the model from becoming overconfident in its predictions, improves calibration, and enhances generalization, especially beneficial for binary classification tasks.
+*   **GRADIENT_CLIP_NORM**: 1.0. Gradient clipping with a norm of 1.0 is applied to prevent exploding gradients, ensuring stable training, particularly in deep networks and during mixed precision training.
+*   **NUM_WORKERS**: 10. The number of data loading workers is set to 10, allowing for efficient parallel loading of data to keep the GPU busy.
+*   **PIN_MEMORY**: True. When running on CUDA, `pin_memory` is set to `True` to enable faster data transfer from CPU to GPU.
+*   **PERSISTENT_WORKERS**: True. `persistent_workers` is enabled when `NUM_WORKERS > 0` to keep worker processes alive between epochs, reducing overhead.
+*   **ADAM_BETA1**: 0.9, **ADAM_BETA2**: 0.999, **ADAM_EPS**: 1e-8. These are standard momentum parameters and a small epsilon value for the Adam optimizer, ensuring stable and efficient optimization.
+*   **SCHEDULER_STEP_SIZE**: 10, **SCHEDULER_GAMMA**: 0.1. These parameters define the `StepLR` learning rate scheduler, which reduces the learning rate by a factor of `gamma` every `step_size` epochs.
+
+3.3.1.2.2 Data Augmentation
+
+A robust set of data augmentation techniques is applied to the training data to improve the model's generalization capabilities and make it more resilient to variations in input data.
+
+*   **Resize**: Images are initially resized to (128, 128) before further augmentations. This provides a consistent starting point and allows for subsequent cropping.
+*   **Random Crop (Training)**: For the training set, images are randomly cropped to the target `IMAGE_SIZE` (112, 112). This simulates variations in face positioning and scale, forcing the model to learn features that are robust to slight shifts.
+*   **Center Crop (Validation)**: For the validation set, images are center-cropped to the target `IMAGE_SIZE` (112, 112) to ensure consistent evaluation without introducing additional variability.
+*   **Random Horizontal Flip**: Applied with a probability of 0.5, this augmentation increases data diversity and helps the model learn features invariant to horizontal reflections of faces.
+*   **Random Rotation**: Images are randomly rotated within a range of ±10 degrees. This simulates slight head pose variations and camera angle differences.
+*   **Color Jitter**: Variations in brightness (±20%), contrast (±20%), saturation (±20%), and hue (±10%) are introduced. This simulates different lighting conditions and camera characteristics, making the model more robust to environmental changes.
+*   **ToTensor**: Converts PIL Images to PyTorch tensors, scaling pixel values from [0, 255] to [0, 1] and reordering dimensions from HWC to CHW.
+*   **Normalization**: Images are normalized using ImageNet statistics (Mean: [0.485, 0.456, 0.406], Std: [0.229, 0.224, 0.225]). This standardizes the input distribution, which is crucial for efficient training and compatibility with pre-trained models.
+
+
+3.3.1.2.3 Dataset Splitting and Handling
+
+The dataset handling strategy focuses on reproducibility, balanced class representation, and efficient data loading.
+
+*   **Dataset Split**: The dataset is split into an 80% training set and a 20% validation set using `torch.utils.data.random_split`. A fixed random seed of 42 is used with `torch.Generator().manual_seed(42)` to ensure that the split is reproducible across different runs, allowing for consistent monitoring of model performance and overfitting.
+*   **Class Imbalance Handling**: The dataset is typically imbalanced, with a disproportionate number of samples in certain classes (e.g., more spoof images than live images). To address this, inverse-frequency weights are calculated for each class based on the training set's class distribution. These weights are then used to create a `torch.utils.data.WeightedRandomSampler`.
+*   **Weighted Random Sampling**: The `WeightedRandomSampler` is used with `replacement=True` to ensure that each training batch contains a balanced representation of classes. This means that samples from underrepresented classes are more likely to be selected, preventing the model from being biased towards the majority class and improving its ability to learn from all classes effectively.
+*   **Data Loaders**: `DataLoader` instances are created for both training and validation sets. The training `DataLoader` uses the `WeightedRandomSampler` and `shuffle=False` (as shuffling is handled by the sampler). Both loaders are configured with `NUM_WORKERS`, `PIN_MEMORY`, `PERSISTENT_WORKERS`, `prefetch_factor`, and `drop_last=True` for optimized data loading.
+*   **CUDNN Benchmark**: If a CUDA-enabled GPU is available, `torch.backends.cudnn.benchmark = True` is enabled. This allows cuDNN to auto-tune the best algorithm for convolutional operations, leading to faster training. `cudnn.deterministic = False` and `torch.backends.cuda.matmul.allow_tf32 = True`, `torch.backends.cudnn.allow_tf32 = True` are also set for further performance optimizations.
+
+3.3.1.2.4 DPCNN Architecture
+
+The DPCNN architecture, as defined in `model_dpcnn.py`, is built upon a series of DPCNN blocks that progressively extract features and reduce spatial dimensions. The script provides two variants: `DPCNN` (standard) and `LightweightDPCNN`.
+
+**1. DPCNNBlock**:
+The core building block of the DPCNN is the `DPCNNBlock` class. Each block consists of:
+*   Two convolutional layers (`nn.Conv2d`) with 3x3 kernels and 1-pixel padding, followed by Batch Normalization (`nn.BatchNorm2d`) and ReLU activation (`F.relu`).
+*   A `MaxPool2d(2, 2)` layer for downsampling, reducing the spatial dimensions by half.
+*   A `Dropout2d(0.3)` layer for regularization.
+*   A skip connection: This allows the input to bypass the convolutional layers and be added to the output. If the input and output channel counts differ, a 1x1 convolution (`nn.Conv2d`) is used to match the dimensions; otherwise, `nn.Identity()` is used. The skip connection is interpolated to match the output size before being added.
+
+**2. Standard DPCNN (`DPCNN` class)**:
+*   **Initial Feature Extraction**:
+    *   [`nn.Conv2d(input_channels, 64, 7, padding=3)`](YeohLiXiang/model_dpcnn.py:42): An initial convolutional layer with a larger 7x7 kernel to capture broader features, followed by Batch Normalization and ReLU.
+    *   [`nn.MaxPool2d(2, 2)`](YeohLiXiang/model_dpcnn.py:45): Downsamples the feature maps.
+*   **Pyramid Blocks**: Four `DPCNNBlock` instances are stacked, progressively increasing the number of channels:
+    *   [`block1 = DPCNNBlock(64, 128)`](YeohLiXiang/model_dpcnn.py:49)
+    *   [`block2 = DPCNNBlock(128, 256)`](YeohLiXiang/model_dpcnn.py:50)
+    *   [`block3 = DPCNNBlock(256, 512)`](YeohLiXiang/model_dpcnn.py:51)
+    *   [`block4 = DPCNNBlock(512, 512)`](YeohLiXiang/model_dpcnn.py:52)
+    These blocks extract features at different scales, forming the "pyramid" structure.
+*   **Global Average Pooling**:
+    *   [`nn.AdaptiveAvgPool2d(1)`](YeohLiXiang/model_dpcnn.py:55): Reduces each feature map to a single value, effectively summarizing the spatial information and reducing the number of parameters in the subsequent fully connected layers.
+*   **Classifier**:
+    *   [`nn.Dropout(dropout_rate)`](YeohLiXiang/model_dpcnn.py:59): Applies dropout for regularization.
+    *   [`nn.Linear(512, 256)`](YeohLiXiang/model_dpcnn.py:60): A fully connected layer with 256 neurons, followed by ReLU activation.
+    *   [`nn.Dropout(dropout_rate)`](YeohLiXiang/model_dpcnn.py:62): Another dropout layer.
+    *   [`nn.Linear(256, num_classes)`](YeohLiXiang/model_dpcnn.py:63): The final linear layer mapping to the number of output classes.
+
+**3. Lightweight DPCNN (`LightweightDPCNN` class)**:
+This variant is designed for faster training and inference with fewer parameters.
+*   **Initial Feature Extraction**:
+    *   [`nn.Conv2d(input_channels, 32, 5, padding=2)`](YeohLiXiang/model_dpcnn.py:101): Uses a smaller 5x5 kernel and fewer output channels (32).
+    *   [`nn.MaxPool2d(2, 2)`](YeohLiXiang/model_dpcnn.py:104)
+*   **Lightweight Pyramid Blocks**: Three `DPCNNBlock` instances with reduced channel counts:
+    *   [`block1 = DPCNNBlock(32, 64)`](YeohLiXiang/model_dpcnn.py:108)
+    *   [`block2 = DPCNNBlock(64, 128)`](YeohLiXiang/model_dpcnn.py:109)
+    *   [`block3 = DPCNNBlock(128, 256)`](YeohLiXiang/model_dpcnn.py:110)
+*   **Global Average Pooling**: Same as the standard DPCNN.
+*   **Classifier**: Reduced number of neurons in the fully connected layers:
+    *   [`nn.Linear(256, 128)`](YeohLiXiang/model_dpcnn.py:118)
+    *   [`nn.Linear(128, num_classes)`](YeohLiXiang/model_dpcnn.py:121)
+
+**Weight Initialization**: Both DPCNN variants use `kaiming_normal_` for convolutional layers and `normal_` for linear layers, with biases initialized to zero or one for BatchNorm layers, promoting stable training.
+
+3.3.1.2.5 Loss Functions and Optimization
+
+The training process employs a robust loss function and an efficient optimization strategy.
+
+*   **Loss Function**: `nn.CrossEntropyLoss` is used as the primary loss function. It is configured with:
+    *   `weight=class_weights`: Class weights, calculated based on the inverse frequency of each class in the training dataset, are applied to address class imbalance. This ensures that the model pays more attention to underrepresented classes.
+    *   `label_smoothing=LABEL_SMOOTHING`: Label smoothing (factor 0.1) is applied to prevent overconfident predictions and improve the model's generalization capabilities.
+
+*   **Optimizer**: The `optim.Adam` optimizer is used for training.
+    *   `lr=LEARNING_RATE`: Initial learning rate of 0.001.
+    *   `weight_decay=WEIGHT_DECAY`: L2 regularization with a weight decay of 0.0001.
+    *   `betas=(ADAM_BETA1, ADAM_BETA2)`: Standard momentum parameters (0.9, 0.999).
+    *   `eps=ADAM_EPS`: A small epsilon value (1e-8) for numerical stability.
+
+*   **Learning Rate Scheduler**: A `torch.optim.lr_scheduler.StepLR` scheduler is employed.
+    *   `step_size=SCHEDULER_STEP_SIZE`: The learning rate is decayed every 10 epochs.
+    *   `gamma=SCHEDULER_GAMMA`: The learning rate is multiplied by 0.1 at each step, gradually reducing it over time to allow for finer adjustments as training progresses.
+
+*   **Mixed Precision Training**: Mixed precision training is enabled when a CUDA-enabled GPU is available, using `torch.amp.GradScaler`. This utilizes 16-bit floating-point precision for most operations, significantly speeding up training and reducing memory consumption without sacrificing accuracy. Automatic loss scaling and gradient unscaling are handled by the scaler to maintain numerical stability.
+
+3.3.1.2.6 Training Loop Implementation
+
+The training loop is structured to ensure stability, efficiency, and robust learning.
+
+*   **Phases**: Each epoch comprises distinct training and validation phases.
+    *   **Training Phase**: The model is set to `model.train()` mode, enabling gradient computation, dropout, and batch normalization updates. The optimizer's gradients are zeroed (`optimizer.zero_grad()`), the forward pass is performed, loss is calculated, and then backpropagation (`loss.backward()`) and optimizer step (`optimizer.step()`) are executed.
+    *   **Validation Phase**: The model is set to `model.eval()` mode, disabling gradient computation (`torch.no_grad()`) and dropout, and using global statistics for batch normalization. This ensures consistent and unbiased evaluation of the model's performance on unseen data.
+
+*   **Mixed Precision**: Within the training loop, if mixed precision is enabled, the forward pass and loss calculation are wrapped in `torch.amp.autocast(device_type='cuda')`. The `GradScaler` handles scaling the loss before backpropagation and unscaling gradients before the optimizer step.
+
+*   **Gradient Clipping**: `torch.nn.utils.clip_grad_norm_` is applied to the model's parameters with `GRADIENT_CLIP_NORM=1.0` after `scaler.unscale_(optimizer)` (if mixed precision is used) or after `loss.backward()` (otherwise). This prevents exploding gradients, which can lead to unstable training.
+
+*   **Scheduler Step**: The learning rate scheduler's `scheduler.step()` method is called at the end of each epoch to update the learning rate according to the defined schedule.
+
+*   **Metrics and Logging**: Training loss, accuracy, and current learning rate are printed periodically. At the end of each epoch, validation loss, accuracy, precision, and recall are calculated and logged using a `MetricsLogger`. This provides a comprehensive overview of the model's performance throughout training.
+
+3.3.1.2.7 Model Saving and Checkpointing
+
+A robust model saving and checkpointing strategy is implemented to ensure efficient and reliable training.
+
+*   **Best Model Tracking**: The validation accuracy is continuously monitored. If the current validation accuracy surpasses the `best_val_acc` recorded so far, the model's `state_dict()` is saved to a file (e.g., `dpcnn.pth`). This ensures that the best-performing model on the validation set is always preserved.
+*   **Early Stopping**: An early stopping mechanism is integrated with a `PATIENCE` of 15 epochs. If the validation accuracy does not improve for 15 consecutive epochs, training is automatically terminated. This prevents the model from overfitting to the training data and saves computational resources by stopping training once performance on the validation set plateaus or degrades. This is crucial for anti-spoofing, as overfitting can lead to poor generalization against new spoofing attacks.
