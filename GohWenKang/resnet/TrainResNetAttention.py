@@ -838,7 +838,7 @@ def main():
         'learning_rate': 3e-4,            # Good starting point for ResNet+Attention
         'weight_decay': 5e-4,             # Strong regularization
         'num_workers': 2,                 # Conservative for Ryzen 7 7435HS
-        'save_dir': 'resnet_attention_models',
+        'save_dir': 'GohWenKang/resnet/resnet_attention_models',
         'resume_checkpoint': None,
         'use_attention': True,            # Enable attention mechanisms
         'dropout_rate': 0.3,              # Dropout for regularization

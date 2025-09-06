@@ -195,7 +195,7 @@ class EfficientNetMetaGUI:
         
         # Default model path
         if model_path is None:
-            model_path = "GohWenKang/efficientNet/efficientnet_models/best_efficientnet_model.pth"
+            model_path = "efficientNet/efficientnet_models/best_efficientnet_model.pth"
         
         # Load model if path exists
         if os.path.exists(model_path):
@@ -793,7 +793,7 @@ def main():
     parser = argparse.ArgumentParser(description="EfficientNet+Meta Anti-Spoofing GUI")
     parser.add_argument("--model", "-m", type=str, 
                        help="Path to model file (.pth)",
-                       default="GohWenKang/efficientNet/efficientnet_models/best_efficientnet_model.pth")
+                       default="efficientNet/efficientnet_models/best_efficientnet_model.pth")
     parser.add_argument("--version", "-v", type=str, choices=['b0', 'b1', 'b2'],
                        help="EfficientNet version", default="b0")
     

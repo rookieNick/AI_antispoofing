@@ -28,3 +28,4 @@ dataset/**/*.pic
 vit_cache
 
 vit-antispoofing
+venv_wk

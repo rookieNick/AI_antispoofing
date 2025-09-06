@@ -46,8 +46,20 @@ ai asgmt/
 │   └── results/                # Training/testing results
 │       ├── test_3_20250901/    # Test results
 │       └── train_3_20250901/   # Training metrics
-├── GohWenKang/                 # Alternative implementation
-│   └── readme.md               # Implementation documentation
+├── GohWenKang/                             # Vision Transformer (ViT) and alternative model implementations
+│   ├── VIT/                                # Vision Transformer scripts and models
+│   │   ├── test_one_vit.py                 # Single image test script for ViT
+│   │   └── vit_models/                     # Pretrained ViT model weights
+│   │       └── best_vit_model.pth          # Trained ViT model checkpoint (required for testing)
+│   ├── resnet/                             # ResNet-based scripts and models
+│   │   ├── resnet_gui.py                   # ResNet GUI application
+│   │   └── resnet_attention_models/        # Folder for ResNet model weights
+│   │       └── resnet_model.pth            # Trained ResNet model checkpoint (required for GUI)
+│   ├── efficientNet/                       # EfficientNet scripts and models
+│   │   ├── efficientnet_meta_gui.py        # EfficientNet GUI application
+│   │   └── efficientnet_models/            # Folder for EfficientNet model weights
+│   │       └── efficientnet_model.pth      # Trained EfficientNet model checkpoint (required for GUI)
+│   └── readme.md                           # Setup and usage instructions for GohWenKang models
 └── YeongChingZhou/             # YOLO implementation
     ├── readme.md               # YOLO documentation
     └── yolo_from_scratch.py    # YOLO implementation

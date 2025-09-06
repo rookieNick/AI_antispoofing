@@ -24,7 +24,7 @@ def load_vit_model(model_path):
         'google/vit-base-patch16-224',
         num_labels=2,
         ignore_mismatched_sizes=True,
-        cache_dir='GohWenKang/VIT/vit_cache'
+        cache_dir='VIT/vit_cache'
     )
     checkpoint = torch.load(model_path, map_location='cpu', weights_only=False)
     if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
@@ -61,8 +61,8 @@ def predict(model, image_tensor, device):
 
 def main():
     # Set the model and image file paths here
-    model_path = 'GohWenKang/VIT/vit_models/best_vit_model.pth'  # Change as needed
-    image_path = 'testCaseImages/side angle face.png'  # Change as needed
+    model_path = 'VIT/vit_models/best_vit_model.pth'  # Change as needed
+    image_path = '../testCaseImages/side angle face.png'  # Change as needed
 
     if not os.path.exists(model_path):
         print(f"Model file not found: {model_path}")
