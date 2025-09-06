@@ -213,7 +213,7 @@ def load_pretrained_cdcn(model_path=None):
     if model_path is None:
         # Use default path relative to this file
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        model_path = os.path.join(current_dir, 'advanced_cdcn_best.pth')
+        model_path = os.path.join(current_dir, 'optimized_cdcn_best.pth')
     
     if os.path.exists(model_path):
         try:

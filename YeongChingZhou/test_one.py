@@ -5,7 +5,7 @@ from PIL import Image
 import numpy as np
 
 # Import model and helper from local module
-from cdcn_ver1 import AdvancedCDCN, setup_device
+from cdcn_clean import AdvancedCDCN, setup_device
 
 
 # ------- User-configurable: path to the image to test -------
@@ -63,6 +63,10 @@ def main():
 
     # Try to find checkpoint in the same folder as this script
     chk_candidates = [
+        # New RTX4050 model (preferred)
+        os.path.join(os.path.dirname(__file__), 'CDCN', 'best_algo', 'rtx4050_cdcn_results_20250906_165750', 'rtx4050_cdcn_best.pth'),
+        os.path.join(os.path.dirname(__file__), '..', 'main', 'model', 'CDCN_YeongChingZhou', 'rtx4050_cdcn_best.pth'),
+        # Fallback to old model if new one not found
         os.path.join(os.path.dirname(__file__), 'advanced_cdcn_best.pth'),
         os.path.join(os.path.dirname(__file__), '..', 'advanced_cdcn_best.pth'),
         os.path.join(os.path.dirname(__file__), '..', 'GohWenKang', 'best_vit_model.pth')
@@ -74,7 +78,7 @@ def main():
             break
 
     if chk_path is None:
-        print("No checkpoint found. Please place 'advanced_cdcn_best.pth' next to this script or adjust chk_candidates.")
+        print("No checkpoint found. Please place 'rtx4050_cdcn_best.pth' or 'advanced_cdcn_best.pth' next to this script or adjust chk_candidates.")
         return
 
     print(f"Loading checkpoint: {chk_path}")
