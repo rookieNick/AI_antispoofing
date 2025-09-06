@@ -1,0 +1,12 @@
+Metric,Value,Description
+Accuracy,0.9681087161402122,Overall classification accuracy
+Precision,0.9857433069723572,Positive predictive value
+Recall,0.97642746774947,True positive rate (sensitivity)
+F1-Score,0.9810632728585612,Harmonic mean of precision and recall
+AUC,0.9828016820040717,Area under ROC curve
+Balanced Accuracy,0.94941041633919,Balanced accuracy for imbalanced datasets
+MCC,0.880522695594837,Matthews Correlation Coefficient
+EER,0.0405838630011756,Equal Error Rate (when FAR = FRR)
+HTER,0.0405838630011756,Half Total Error Rate
+MSE,0.027757892978214953,Mean Squared Error
+RMSE,0.16660700158821343,Root Mean Squared Error
