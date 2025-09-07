@@ -118,6 +118,10 @@ def start_webcam_and_recognition():
     start_webcam()
     start_recognition()
 
+def stop_webcam_and_recognition():
+    stop_webcam()
+    stop_recognition()
+
 
 def launch_ui():
     global root, result_output, webcam_label, image_canvas, start_combined_button, import_image_button, model_var, selected_image
@@ -146,7 +150,10 @@ def launch_ui():
 
     # Combined Start Button below webcam
     start_combined_button = ttk.Button(left_frame, text="Start Webcam & Recognition", command=start_webcam_and_recognition)
-    start_combined_button.pack(fill=tk.X, pady=15)
+    start_combined_button.pack(fill=tk.X, pady=5)
+
+    stop_combined_button = ttk.Button(left_frame, text="Stop Webcam & Recognition", command=stop_webcam_and_recognition)
+    stop_combined_button.pack(fill=tk.X, pady=10)
 
     # Imported Image Display Frame (Right, fixed size)
     image_display_frame = ttk.LabelFrame(right_frame, text="Imported Image (max 200x200)", padding="10")
