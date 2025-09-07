@@ -45,4 +45,9 @@ def predict_image(img: Image.Image):
         probabilities = torch.softmax(outputs, dim=1)
         pred_class = probabilities.argmax(dim=1).item()
         confidence = probabilities[0, pred_class].item()
+        
+        # CNN: 0=live, 1=spoof based on CLASS_NAMES
+        pred_label = CLASS_NAMES[pred_class]
+        print(f"[DEBUG CNN] Prediction: {pred_label} (class: {pred_class}, confidence: {confidence:.4f})")
+        
         return pred_class, confidence

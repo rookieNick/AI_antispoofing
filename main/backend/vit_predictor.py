@@ -56,7 +56,7 @@ def load_vit_model():
 vit_model = load_vit_model()
 
 def predict_image_vit(img: Image.Image):
-    """Predict using ViT model - matches test_one.py pattern"""
+    """Predict using ViT model - matches test_one.py pattern exactly"""
     if vit_model is None:
         print("[ERROR] ViT model not loaded!")
         return 0, 0.0
@@ -70,10 +70,14 @@ def predict_image_vit(img: Image.Image):
         with torch.no_grad():
             outputs = vit_model.model(input_tensor)
             probs = torch.softmax(outputs.logits, dim=1)
-            print(f"[DEBUG] ViT softmax probabilities: {probs.cpu().numpy().squeeze()}")
             pred_class = probs.argmax(dim=1).item()
             confidence = probs[0, pred_class].item()
-            print(f"[DEBUG] Predicted class: {CLASS_NAMES[pred_class]}, Confidence: {confidence}")
+            
+            # Match test_one.py logic exactly: 1=Live, 0=Spoof
+            label = "Live" if pred_class == 1 else "Spoof"
+            print(f"[DEBUG] ViT Prediction: {label} | Confidence: {confidence:.2f}")
+            print(f"[DEBUG] ViT pred_class: {pred_class}, is_real: {pred_class == 1}, confidence: {confidence}")
+            
             return pred_class, confidence
     except Exception as e:
         print(f"[ERROR] VIT prediction failed: {e}")
