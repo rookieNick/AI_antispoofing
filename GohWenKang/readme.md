@@ -78,7 +78,7 @@ Then run the training script:
 ```bash
 python GohWenKang/VIT/train_vit.py
 
-python GohWenKang\resnet\TrainResNetAttention.py
+python GohWenKang\resnet\resnet_train.py
 
 python GohWenKang\efficientNet\Train_EfficientNet_Meta.py
 ```

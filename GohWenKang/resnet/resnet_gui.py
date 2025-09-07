@@ -232,7 +232,7 @@ class ResNetAttentionGUI:
             # Initialize model architecture
             self.model = ResNetAttention(
                 num_classes=2,
-                layers=[2, 2, 2, 2],
+                layers=[3, 4, 6, 3],
                 base_channels=64,
                 use_attention=True,
                 dropout_rate=0.3
