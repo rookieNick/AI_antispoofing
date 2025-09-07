@@ -36,7 +36,11 @@ def load_vit_model():
     if os.path.exists(model_path):
         try:
             # Load exactly like GohWenKang test_one.py - simple and direct
-            vit_model.model.load_state_dict(torch.load(model_path, map_location=device))
+            checkpoint = torch.load(model_path, map_location=device, weights_only=False)
+            if isinstance(checkpoint, dict) and 'model_state_dict' in checkpoint:
+                vit_model.model.load_state_dict(checkpoint['model_state_dict'])
+            else:
+                vit_model.model.load_state_dict(checkpoint) # Fallback if it's just the state_dict
             vit_model.model.eval()
             print(f"[DEBUG] ViT model loaded successfully from: {model_path}")
             return vit_model
